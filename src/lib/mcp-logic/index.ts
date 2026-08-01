@@ -72,7 +72,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "create_quiz_draft",
-        description: "Create a new language learning quiz draft (Protected). GatrAI is EXCLUSIVELY for language testing (e.g., English, Japanese, Korean, etc). NEVER ask the user for generic topics like Math, Coding, or SQL. Ask the user for the language they want to test and the skills (Reading, Writing, Speaking, Listening) if they haven't provided them. Always call this first to start creating a quiz draft.",
+        description: "Create a new language learning quiz draft (Protected). IMPORTANT: Do NOT call this tool immediately. You MUST first generate the questions in the chat and show them to the user. Ask the user if they are satisfied with the generated questions. ONLY call this tool AFTER the user explicitly approves the questions. GatrAI is EXCLUSIVELY for language testing (e.g., English, Japanese). NEVER ask the user for generic topics like Math or SQL.",
         inputSchema: {
             type: "object",
             properties: {
@@ -102,7 +102,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "add_questions_to_quiz",
-        description: "Add language testing questions to an existing quiz draft (Protected). The AI MUST generate language assessment questions (reading comprehension, grammar, speaking prompts, listening scenarios, etc) tailored to the requested language. Do not generate generic trivia or non-language questions.",
+        description: "Add language testing questions to an existing quiz draft (Protected). IMPORTANT: Only call this tool to upload the questions AFTER you have already shown them to the user in the chat and received their explicit approval. The AI MUST generate language assessment questions (reading comprehension, grammar, speaking prompts, listening scenarios, etc) tailored to the requested language.",
         inputSchema: {
             type: "object",
             properties: {
