@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check, AlertCircle } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { Form } from "@/components/base/form/form";
 import { Input } from "@/components/base/input/input";
 import { BackgroundPattern } from "@/components/shared-assets/background-patterns";
@@ -264,6 +265,8 @@ export const LoginPage = () => {
                 >
                     Masuk
                 </Button>
+
+                <GoogleAuthButton />
             </Form>
 
             <div className="relative z-10 flex justify-center gap-1 text-center">

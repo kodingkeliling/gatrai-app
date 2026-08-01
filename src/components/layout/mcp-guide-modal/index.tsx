@@ -28,7 +28,8 @@ const GUIDES: Record<AITool, { title: string; steps: GuideStep[] }> = {
             { image: "/mcp-guides/chatgpt/step-01.png", caption: "Buka ChatGPT → Explore GPTs → pilih tab Connectors, lalu klik + New connector." },
             { image: "/mcp-guides/chatgpt/step-02.png", caption: "Pilih MCP sebagai tipe koneksi, lalu tempel URL MCP endpoint di kolom yang tersedia." },
             { image: "/mcp-guides/chatgpt/step-03.png", caption: "Klik Save & Connect. ChatGPT akan mengarahkan Anda ke halaman otorisasi GatrAI." },
-            { image: "/mcp-guides/chatgpt/step-04.png", caption: "Login ke GatrAI jika diminta, lalu klik Setujui & Hubungkan. Selesai! 🎉" },
+            { image: "/mcp-guides/chatgpt/step-04.png", caption: "Login ke GatrAI jika diminta, lalu setujui izinnya." },
+            { image: "/mcp-guides/chatgpt/step-05.png", caption: "Klik Setujui & Hubungkan. Selesai! 🎉" },
         ],
     },
     claude: {
@@ -61,7 +62,8 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
     const totalSteps = guide.steps.length;
     const currentStep = guide.steps[step];
 
-    const handleToolChange = (key: Key) => {
+    const handleToolChange = (key: Key | null) => {
+        if (!key) return;
         setActiveTool(key);
         setStep(0);
     };

@@ -21,6 +21,8 @@ import { useToast } from "@/contexts/use-toast";
 import { useAuthStore } from "@/store/use-auth-store";
 import { PlaygroundUserDropdown } from "@/components/layout/playground-navbar";
 import Image from "next/image";
+import { AdsCard } from "@/components/shared-assets/ads-card";
+import { ADS, PAID_PLAN_IDS } from "@/data/ads";
 
 export const PlaygroundScreen = () => {
     const router = useRouter();
@@ -31,7 +33,10 @@ export const PlaygroundScreen = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
+    const showAds = !user?.planId || !PAID_PLAN_IDS.includes(user.planId);
+    const [currentAdIndex, setCurrentAdIndex] = useState(0);
+    const [isDismissed, setIsDismissed] = useState(false);
     const {
         selectExam,
         setQuestions,
@@ -394,6 +399,20 @@ export const PlaygroundScreen = () => {
                             </button>
                         ))}
                     </div>
+
+                    {/* Ads for free users */}
+                    {showAds && !isDismissed && (
+                        <AdsCard
+                            ad={ADS[currentAdIndex % ADS.length]}
+                            onDismiss={() => {
+                                if (currentAdIndex < ADS.length - 1) {
+                                    setCurrentAdIndex(prev => prev + 1);
+                                } else {
+                                    setIsDismissed(true);
+                                }
+                            }}
+                        />
+                    )}
                 </aside>
 
                 <section className="flex flex-1 flex-col gap-8">
@@ -482,6 +501,22 @@ export const PlaygroundScreen = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* Ads for free users (mobile - below question card) */}
+                    {showAds && !isDismissed && (
+                        <div className="md:hidden">
+                            <AdsCard
+                                ad={ADS[currentAdIndex % ADS.length]}
+                                onDismiss={() => {
+                                    if (currentAdIndex < ADS.length - 1) {
+                                        setCurrentAdIndex(prev => prev + 1);
+                                    } else {
+                                        setIsDismissed(true);
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-between mt-auto gap-4">
                         <Button
