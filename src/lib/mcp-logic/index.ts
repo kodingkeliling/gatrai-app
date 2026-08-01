@@ -1,7 +1,16 @@
 import { prisma } from "../prisma";
 import { checkAIProviderStatus } from "@/actions/ai-status";
 
-export const PROTECTED_TOOLS = ["list_exams", "get_exam", "get_users"];
+export const PROTECTED_TOOLS = [
+    "list_exams",
+    "get_exam",
+    "get_users",
+    "create_quiz_draft",
+    "add_questions_to_quiz",
+    "commit_quiz"
+];
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkeliling.com";
 
 export const TOOLS_LIST = [
     {
@@ -21,13 +30,13 @@ export const TOOLS_LIST = [
     },
     {
         name: "list_exams",
-        description: "List recent language testing exams (Protected)",
+        description: "List recent quizzes (exams) (Protected)",
         inputSchema: {
             type: "object",
             properties: {
                 limit: {
                     type: "number",
-                    description: "Maximum number of exams to retrieve",
+                    description: "Maximum number of quizzes to retrieve",
                     default: 10
                 }
             }
@@ -35,13 +44,13 @@ export const TOOLS_LIST = [
     },
     {
         name: "get_exam",
-        description: "Get detail of a specific exam by ID, including its questions and scores (Protected)",
+        description: "Get details of a specific quiz (exam) by ID, including its questions and scores (Protected)",
         inputSchema: {
             type: "object",
             properties: {
                 examId: {
                     type: "string",
-                    description: "The unique identifier of the exam"
+                    description: "The unique identifier of the quiz"
                 }
             },
             required: ["examId"]
@@ -59,6 +68,83 @@ export const TOOLS_LIST = [
                     default: 20
                 }
             }
+        }
+    },
+    {
+        name: "create_quiz_draft",
+        description: "Create a new quiz draft (Protected). Always call this first to start creating a quiz as a draft before saving.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                language: {
+                    type: "string",
+                    description: "The language to be tested (e.g., English, Japanese, Korean)"
+                },
+                skills: {
+                    type: "array",
+                    items: {
+                        type: "string",
+                        enum: ["Reading", "Writing", "Speaking", "Listening"]
+                    },
+                    description: "The language skills to test"
+                },
+                provider: {
+                    type: "string",
+                    description: "AI provider used (optional)"
+                },
+                modelName: {
+                    type: "string",
+                    description: "AI model name used (optional)"
+                }
+            },
+            required: ["language", "skills"]
+        }
+    },
+    {
+        name: "add_questions_to_quiz",
+        description: "Add questions to an existing quiz draft (Protected).",
+        inputSchema: {
+            type: "object",
+            properties: {
+                quizId: {
+                    type: "string",
+                    description: "The unique identifier of the quiz"
+                },
+                questions: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            content: {
+                                type: "string",
+                                description: "The question text, prompt, or structure"
+                            },
+                            type: {
+                                type: "string",
+                                enum: ["reading", "writing", "speaking", "listening"],
+                                description: "The type of language skill this question tests"
+                            }
+                        },
+                        required: ["content", "type"]
+                    },
+                    description: "List of questions to add"
+                }
+            },
+            required: ["quizId", "questions"]
+        }
+    },
+    {
+        name: "commit_quiz",
+        description: "Finalize and save the quiz (Protected). Call this when the user confirms saving/finalizing the draft.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                quizId: {
+                    type: "string",
+                    description: "The unique identifier of the quiz to commit"
+                }
+            },
+            required: ["quizId"]
         }
     }
 ];
@@ -89,7 +175,6 @@ export async function executeTool(
 
         case "list_exams": {
             const limit = args.limit || 10;
-            // Return exams for the authenticated user (or all if admin, but let's scope to the user's own exams or all if user exists)
             const user = await prisma.user.findUnique({
                 where: { id: userId! }
             });
@@ -116,7 +201,10 @@ export async function executeTool(
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(exams, null, 2)
+                        text: JSON.stringify(exams.map(e => ({
+                            ...e,
+                            url: `${APP_URL}/playground/${e.id}`
+                        })), null, 2)
                     }
                 ]
             };
@@ -149,12 +237,11 @@ export async function executeTool(
 
             if (!exam) {
                 return {
-                    content: [{ type: "text", text: `Exam with ID ${examId} not found.` }],
+                    content: [{ type: "text", text: `Quiz with ID ${examId} not found.` }],
                     isError: true
                 };
             }
 
-            // Scoping: Only allow access if user is admin or owns the exam
             if (user.role !== "SUPER_ADMIN" && exam.userId !== user.id) {
                 throw new Error("UNAUTHORIZED");
             }
@@ -163,7 +250,10 @@ export async function executeTool(
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(exam, null, 2)
+                        text: JSON.stringify({
+                            ...exam,
+                            url: `${APP_URL}/playground/${exam.id}`
+                        }, null, 2)
                     }
                 ]
             };
@@ -198,6 +288,108 @@ export async function executeTool(
                     {
                         type: "text",
                         text: JSON.stringify(users, null, 2)
+                    }
+                ]
+            };
+        }
+
+        case "create_quiz_draft": {
+            const { language, skills, provider = "auto", modelName } = args;
+
+            const exam = await prisma.exam.create({
+                data: {
+                    userId: userId!,
+                    language,
+                    skills,
+                    provider,
+                    modelName: modelName || null,
+                    status: "ongoing" // draft
+                }
+            });
+
+            const quizUrl = `${APP_URL}/playground/${exam.id}`;
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Quiz draft created successfully.\nQuiz ID: ${exam.id}\nStatus: ongoing (draft)\nURL: ${quizUrl}\n\nYou can now add questions using add_questions_to_quiz.`
+                    }
+                ]
+            };
+        }
+
+        case "add_questions_to_quiz": {
+            const { quizId, questions } = args;
+
+            // Check access
+            const exam = await prisma.exam.findUnique({
+                where: { id: quizId }
+            });
+
+            if (!exam) {
+                return {
+                    content: [{ type: "text", text: `Quiz with ID ${quizId} not found.` }],
+                    isError: true
+                };
+            }
+
+            if (exam.userId !== userId) {
+                throw new Error("UNAUTHORIZED");
+            }
+
+            // Create questions
+            await prisma.question.createMany({
+                data: questions.map((q: any) => ({
+                    examId: quizId,
+                    content: q.content,
+                    type: q.type
+                }))
+            });
+
+            const quizUrl = `${APP_URL}/playground/${quizId}`;
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Successfully added ${questions.length} questions to Quiz Draft.\nURL to view/try: ${quizUrl}`
+                    }
+                ]
+            };
+        }
+
+        case "commit_quiz": {
+            const { quizId } = args;
+
+            const exam = await prisma.exam.findUnique({
+                where: { id: quizId }
+            });
+
+            if (!exam) {
+                return {
+                    content: [{ type: "text", text: `Quiz with ID ${quizId} not found.` }],
+                    isError: true
+                };
+            }
+
+            if (exam.userId !== userId) {
+                throw new Error("UNAUTHORIZED");
+            }
+
+            // Set status to completed (finalized)
+            const updated = await prisma.exam.update({
+                where: { id: quizId },
+                data: { status: "completed" }
+            });
+
+            const quizUrl = `${APP_URL}/playground/${quizId}`;
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Quiz committed and saved successfully!\nStatus: ${updated.status}\nURL to try: ${quizUrl}`
                     }
                 ]
             };
