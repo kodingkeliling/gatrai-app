@@ -346,6 +346,20 @@ export const PlaygroundExamList = () => {
         );
     };
 
+    useEffect(() => {
+        if (!user) return;
+        fetch("/api/exams")
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.exams && Array.isArray(data.exams)) {
+                    data.exams.forEach((exam: any) => {
+                        useExamStore.getState().addOrUpdateExam(exam);
+                    });
+                }
+            })
+            .catch((err) => console.error("Failed to sync exams from server:", err));
+    }, [user]);
+
     const processed = useMemo(() => {
         let list = [...exams];
 

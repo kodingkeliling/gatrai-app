@@ -21,7 +21,7 @@ import { useToast } from "@/contexts/use-toast";
 import { useAuthStore } from "@/store/use-auth-store";
 import { PlaygroundUserDropdown } from "@/components/layout/playground-navbar";
 import Image from "next/image";
-import { AdsCard } from "@/components/shared-assets/ads-card";
+import { AdsModal } from "@/components/shared-assets/ads-modal";
 import { ADS, PAID_PLAN_IDS } from "@/data/ads";
 
 export const PlaygroundScreen = () => {
@@ -35,8 +35,8 @@ export const PlaygroundScreen = () => {
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
     const { isAuthenticated, user } = useAuthStore();
     const showAds = !user?.planId || !PAID_PLAN_IDS.includes(user.planId);
-    const [currentAdIndex, setCurrentAdIndex] = useState(0);
-    const [isDismissed, setIsDismissed] = useState(false);
+    const [adsModalAd, setAdsModalAd] = useState<(typeof ADS)[number] | null>(null);
+    const pendingStartRef = useRef(false);
     const {
         selectExam,
         setQuestions,
@@ -57,7 +57,13 @@ export const PlaygroundScreen = () => {
     const [error, setError] = useState<string | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const isGenerating = useRef(false);
-    const [loadingExam, setLoadingExam] = useState(false);
+    // Initialize loadingExam=true when exam is not in store yet, to prevent premature redirect
+    const [loadingExam, setLoadingExam] = useState(() => {
+        // We can't check exams here in useState init, so we just start with false;
+        // the fix is in the effect order and isFetchingRef
+        return false;
+    });
+    const isFetchingRef = useRef(false);
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     const {
@@ -143,12 +149,13 @@ export const PlaygroundScreen = () => {
         }
     }, [activeExam, setStatus, setQuestions, toastError, toastWarning, router, deleteExam, provider, modelName, customApiKeys, usePersonalKey]);
 
-    // Fetch exam if it exists in DB but not in store
+    // Fetch exam from DB if not in local store — fixes race condition using isFetchingRef
     useEffect(() => {
         if (!hasHydrated || !id) return;
 
         const exists = exams.some((e) => e.id === id);
-        if (!exists) {
+        if (!exists && !isFetchingRef.current) {
+            isFetchingRef.current = true;
             setLoadingExam(true);
             setFetchError(null);
             fetch(`/api/exams/${id}`)
@@ -161,13 +168,13 @@ export const PlaygroundScreen = () => {
                 })
                 .catch((err) => {
                     setFetchError(err.message || "Failed to load exam");
-                    router.push("/");
                 })
                 .finally(() => {
                     setLoadingExam(false);
+                    isFetchingRef.current = false;
                 });
         }
-    }, [id, exams, hasHydrated, addOrUpdateExam, router]);
+    }, [id, hasHydrated, addOrUpdateExam]);
 
     // Sync active exam with URL
     useEffect(() => {
@@ -176,10 +183,17 @@ export const PlaygroundScreen = () => {
         }
     }, [id, activeExam?.id, selectExam, hasHydrated, exams]);
 
-    // If no active exam and not found in list, redirect back home
+    // Only redirect if hydrated, not loading, not fetching, exam not found, and no fetch in progress
     useEffect(() => {
-        if (hasHydrated && id && !loadingExam && !exams.find(e => e.id === id) && !fetchError) {
-            router.push("/");
+        if (
+            hasHydrated &&
+            id &&
+            !loadingExam &&
+            !isFetchingRef.current &&
+            !exams.find((e) => e.id === id) &&
+            fetchError
+        ) {
+            router.push("/playground");
         }
     }, [id, exams, router, hasHydrated, loadingExam, fetchError]);
 
@@ -338,12 +352,38 @@ export const PlaygroundScreen = () => {
                             <Button className="flex-1" color="secondary" onClick={handleExit}>
                                 Batal
                             </Button>
-                            <Button className="flex-1" onClick={startExam}>
+                            <Button
+                                className="flex-1"
+                                onClick={() => {
+                                    if (showAds) {
+                                        // Pick a random ad and show modal, then start after dismiss
+                                        const randomAd = ADS[Math.floor(Math.random() * ADS.length)];
+                                        pendingStartRef.current = true;
+                                        setAdsModalAd(randomAd);
+                                    } else {
+                                        startExam();
+                                    }
+                                }}
+                            >
                                 Mulai Ujian
                             </Button>
                         </div>
                     </div>
                 </main>
+
+                {/* Ads Modal - fullscreen, shows once when user clicks Mulai Ujian */}
+                {adsModalAd && (
+                    <AdsModal
+                        ad={adsModalAd}
+                        onClose={() => {
+                            setAdsModalAd(null);
+                            if (pendingStartRef.current) {
+                                pendingStartRef.current = false;
+                                startExam();
+                            }
+                        }}
+                    />
+                )}
             </div>
         );
     }
@@ -437,20 +477,6 @@ export const PlaygroundScreen = () => {
                             </button>
                         ))}
                     </div>
-
-                    {/* Ads for free users */}
-                    {showAds && !isDismissed && (
-                        <AdsCard
-                            ad={ADS[currentAdIndex % ADS.length]}
-                            onDismiss={() => {
-                                if (currentAdIndex < ADS.length - 1) {
-                                    setCurrentAdIndex(prev => prev + 1);
-                                } else {
-                                    setIsDismissed(true);
-                                }
-                            }}
-                        />
-                    )}
                 </aside>
 
                 <section className="flex flex-1 flex-col gap-8">
@@ -540,21 +566,6 @@ export const PlaygroundScreen = () => {
                         </div>
                     </div>
 
-                    {/* Ads for free users (mobile - below question card) */}
-                    {showAds && !isDismissed && (
-                        <div className="md:hidden">
-                            <AdsCard
-                                ad={ADS[currentAdIndex % ADS.length]}
-                                onDismiss={() => {
-                                    if (currentAdIndex < ADS.length - 1) {
-                                        setCurrentAdIndex(prev => prev + 1);
-                                    } else {
-                                        setIsDismissed(true);
-                                    }
-                                }}
-                            />
-                        </div>
-                    )}
 
                     <div className="flex items-center justify-between mt-auto gap-4">
                         <Button
