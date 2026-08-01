@@ -79,7 +79,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "save_approved_language_quiz",
-        description: "Saves a finalized language quiz to GatrAI database. IMPORTANT WORKFLOW: 1) When user asks to make a quiz, DO NOT call tools. Instead, give them a template prompt to fill (Language, Skills, Questions count) and say you will brainstorm together. 2) Once user fills it, generate the questions IN THE CHAT without calling any tools. 3) Wait for user to read and say 'simpan' or 'save'. 4) ONLY THEN call this tool to save and return the playground URL.",
+        description: `Saves a finalized language quiz to GatrAI. CRITICAL WORKFLOW RULES:\n1) When user asks to create a quiz, DO NOT call any tools immediately. First call 'get_language_quiz_template' to understand the EXACT format requirements.\n2) Respond with a template prompt for the user to fill in (Language, Skills, Count), then generate questions IN THE CHAT for brainstorming WITHOUT calling any tools.\n3) Wait for user to say 'simpan' or 'save'. ONLY THEN call this tool.\n4) CRITICAL: Each question MUST use the structured fields (description, options, answer, type). NEVER put all question content in a single 'content' string. Reading/Listening MUST have exactly 4 options as an array. Speaking/Writing MUST have options=null.`,
         inputSchema: {
             type: "object",
             properties: {
@@ -101,21 +101,31 @@ export const TOOLS_LIST = [
                 },
                 questions: {
                     type: "array",
+                    description: "The structured list of approved questions. MUST use the structured fields — NOT a single 'content' string.",
                     items: {
                         type: "object",
                         properties: {
-                            content: {
+                            description: {
                                 type: "string",
-                                description: "The question text, prompt, or structure"
+                                description: "The full question text, reading passage, listening transcript, or speaking prompt. HTML tags like <b>, <i>, <br/> are supported. For Listening: MUST include the conversation transcript using MALE:, FEMALE:, NARRATOR: labels, then a 'Question:' line at the end. For Speaking: MUST include the sentence to be read aloud."
+                            },
+                            options: {
+                                type: ["array", "null"],
+                                items: { type: "string" },
+                                description: "For Reading and Listening: REQUIRED — provide exactly 4 string options. For Speaking and Writing: MUST be null."
+                            },
+                            answer: {
+                                type: "string",
+                                description: "The correct answer. For Reading/Listening: must EXACTLY match one of the 4 options strings. For Writing: the correct translation or filled blank (use '|->' to separate multiple blanks). For Speaking: the exact sentence transcript."
                             },
                             type: {
                                 type: "string",
-                                enum: ["reading", "writing", "speaking", "listening"]
+                                enum: ["reading", "writing", "speaking", "listening"],
+                                description: "The skill type in lowercase."
                             }
                         },
-                        required: ["content", "type"]
-                    },
-                    description: "The final list of questions approved by the user"
+                        required: ["description", "options", "answer", "type"]
+                    }
                 }
             },
             required: ["hasUserExplicitlyApproved", "language", "skills", "questions"]
@@ -153,43 +163,93 @@ export async function executeTool(
                 content: [
                     {
                         type: "text",
-                        text: `GatrAI Quiz Generation Guidelines:
+                        text: `GatrAI Quiz Question Format Guide
 
-Each question MUST be created in a clean JSON format before showing it to the user.
-Do not output anything other than the JSON format when saving, but for brainstorming with the user, you must follow this template.
+Use this guide BEFORE generating any quiz questions. All questions saved to GatrAI MUST follow this exact structure for them to render correctly in the playground.
 
-Guidelines per skill:
-- Reading: Short text passage followed by a multiple choice question with exactly 4 options.
-- Listening: Conversation or speech transcript featuring 'MALE:', 'FEMALE:', or 'NARRATOR:' labels, followed by a multiple choice question with exactly 4 options.
-- Writing: Sentence containing a translation task or blank fill-in using the exact term '[blank]' (e.g. "I want to [blank] water" with answer "drink"). Set options to null.
-- Speaking: Short sentence in the target language for the user to read aloud. Set options to null. The answer field must match the exact transcript.
+Each question in the 'questions' array of 'save_approved_language_quiz' must be an object with these fields:
+  - description (string): The full question content — HTML supported (<b>, <i>, <br/>)
+  - options (array of 4 strings | null): 4 choices for Reading/Listening; null for Speaking/Writing
+  - answer (string): The exact correct answer
+  - type (string): "reading" | "writing" | "speaking" | "listening"
 
-JSON Question Structure for the 'save_approved_language_quiz' tool:
+════════════════════════════════════════
+SKILL: Reading
+════════════════════════════════════════
+Description: A short reading passage followed by a multiple choice question.
+Options: REQUIRED — exactly 4 strings. The correct answer MUST be included verbatim.
+Answer: Must EXACTLY match one of the 4 options.
+
+Example:
 {
-  "content": "JSON string containing the question details. This must be stringified",
-  "type": "reading | writing | speaking | listening"
+  "description": "<p>Emma wakes up every morning at 6 AM. She eats breakfast and then takes a bus to work. She enjoys reading during the commute.</p><br/><p>How does Emma go to work?</p>",
+  "options": ["By car", "By bus", "By train", "On foot"],
+  "answer": "By bus",
+  "type": "reading"
 }
 
-The "content" field of each question object must be a JSON string with the following structure:
+════════════════════════════════════════
+SKILL: Listening
+════════════════════════════════════════
+Description: A conversation transcript using MALE:, FEMALE:, NARRATOR: labels (NEVER translate these), then a 'Question:' line.
+Options: REQUIRED — exactly 4 strings.
+Answer: Must EXACTLY match one of the 4 options.
+
+Example:
 {
-  "description": "The main question prompt, text, blank sentence, or conversation transcript. Use HTML tags like <b>, <i>, <br> for styling.",
-  "options": ["Option A", "Option B", "Option C", "Option D"] // or null for writing/speaking
-  "answer": "Correct option or correct answer text"
+  "description": "Listen to the conversation and answer the question.<br/><br/>MALE: Hello, I would like to reserve a table for two tonight at 7 PM.<br/>FEMALE: Of course! May I have your name?<br/>MALE: My name is John Smith.<br/><br/>Question: What is the man trying to do?",
+  "options": ["Order food", "Make a reservation", "Cancel a booking", "Ask for directions"],
+  "answer": "Make a reservation",
+  "type": "listening"
 }
 
-Example for Reading:
-{
-  "description": "Read the text and choose the correct answer: <br/> Budi pergi ke pasar untuk membeli buah. Apa yang dibeli Budi?",
-  "options": ["Sayuran", "Buah", "Daging", "Ikan"],
-  "answer": "Buah"
-}
+════════════════════════════════════════
+SKILL: Writing
+════════════════════════════════════════
+Description: A translation task or fill-in-the-blank sentence. Use [blank] (with square brackets) for blanks — NEVER underscores.
+Options: MUST be null.
+Answer: The correct translated text or the filled blank word(s). Use '|->' to separate multiple blank answers.
 
-Example for Writing:
+Example (Translation):
 {
-  "description": "Complete the sentence: <br/> She is a [blank] at the hospital.",
+  "description": "<p><b>Translate to English:</b></p><p>Saya sangat senang bertemu dengan Anda hari ini.</p>",
   "options": null,
-  "answer": "doctor"
+  "answer": "I am very happy to meet you today.",
+  "type": "writing"
 }
+
+Example (Fill in the blank):
+{
+  "description": "<p>Complete the sentence:</p><p>She works as a [blank] at the hospital and starts her shift at [blank] every morning.</p>",
+  "options": null,
+  "answer": "doctor|->7 AM",
+  "type": "writing"
+}
+
+════════════════════════════════════════
+SKILL: Speaking
+════════════════════════════════════════
+Description: A Read Aloud or Listen and Repeat prompt. Include the sentence to say in the description. Keep it natural, 8-20 words.
+Options: MUST be null.
+Answer: The EXACT sentence text the user must say (used for speech recognition matching).
+
+Example:
+{
+  "description": "<p><b>Read Aloud:</b> Please say the following sentence clearly.</p><br/><p>\"I would like to order a coffee and a sandwich, please.\"</p>",
+  "options": null,
+  "answer": "I would like to order a coffee and a sandwich, please.",
+  "type": "speaking"
+}
+
+════════════════════════════════════════
+CRITICAL RULES:
+- Reading & Listening: options MUST be an array of exactly 4 strings, never null
+- Speaking & Writing: options MUST be null, never an array
+- answer for Reading/Listening MUST EXACTLY match one of the 4 options strings character-for-character
+- NEVER put all question info in a single content string — always use the 4 separate fields
+- Listening description: ALWAYS use MALE: FEMALE: NARRATOR: labels in English only
+- Writing blanks: ALWAYS use [blank] in square brackets, NEVER use underscores
+════════════════════════════════════════
 `
                     }
                 ]
@@ -339,6 +399,39 @@ Example for Writing:
                 };
             }
 
+            // Validate and normalize questions format
+            const normalizedQuestions = (questions as any[]).map((q: any) => {
+                // Support new structured format { description, options, answer, type }
+                // Fall back to old single content string format for backwards compatibility
+                const type = (q.type || "reading").toLowerCase();
+                let content: string;
+
+                if (q.description !== undefined) {
+                    // New structured format — serialize into the JSON format the parser understands
+                    const isMultiChoice = type === "reading" || type === "listening";
+                    let options: string[] | null = null;
+
+                    if (isMultiChoice && Array.isArray(q.options) && q.options.length > 0) {
+                        options = q.options.map((o: any) => String(o));
+                    } else {
+                        options = null;
+                    }
+
+                    content = JSON.stringify({
+                        description: String(q.description || ""),
+                        options,
+                        answer: String(q.answer || "")
+                    });
+                } else if (q.content !== undefined) {
+                    // Legacy single content string — store as-is
+                    content = String(q.content);
+                } else {
+                    content = "";
+                }
+
+                return { content, type };
+            });
+
             const exam = await prisma.exam.create({
                 data: {
                     userId: userId!,
@@ -346,12 +439,12 @@ Example for Writing:
                     skills,
                     provider,
                     modelName: modelName || null,
-                    status: "completed" // Finalized immediately
+                    status: "ongoing" // Set to ongoing so user can take the quiz
                 }
             });
 
             await prisma.question.createMany({
-                data: questions.map((q: any) => ({
+                data: normalizedQuestions.map((q: any) => ({
                     examId: exam.id,
                     content: q.content,
                     type: q.type
@@ -364,7 +457,7 @@ Example for Writing:
                 content: [
                     {
                         type: "text",
-                        text: `Quiz saved successfully to GatrAI!\nURL to try: ${quizUrl}`
+                        text: `Quiz saved successfully to GatrAI! 🎉\n\n📝 ${normalizedQuestions.length} questions saved.\n🔗 Try the quiz here: ${quizUrl}\n\nThe quiz is ready to be taken. Share the link with others to let them take the quiz too!`
                     }
                 ]
             };
