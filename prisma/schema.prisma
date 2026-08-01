@@ -93,6 +93,7 @@ model Exam {
   modelName  String?
 
   status     String   @default("ongoing") // ongoing | completed
+  originalExamId String?
 
   questions  Question[]
 

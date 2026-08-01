@@ -53,6 +53,7 @@ interface ExamState {
     finishExam: () => void;
     retryActiveExam: () => void;
     startExam: () => void;
+    addOrUpdateExam: (exam: ExamAttempt) => void;
 }
 
 export const useExamStore = create<ExamState>()(
@@ -173,6 +174,19 @@ export const useExamStore = create<ExamState>()(
                             : e
                     ),
                 })),
+
+            addOrUpdateExam: (exam) =>
+                set((state) => {
+                    const exists = state.exams.some((e) => e.id === exam.id);
+                    if (exists) {
+                        return {
+                            exams: state.exams.map((e) => (e.id === exam.id ? { ...e, ...exam } : e)),
+                        };
+                    }
+                    return {
+                        exams: [exam, ...state.exams],
+                    };
+                }),
         }),
         {
             name: "inggris-ai-v2-storage",

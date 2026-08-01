@@ -50,12 +50,15 @@ export const PlaygroundScreen = () => {
         exams,
         hasHydrated,
         startExam,
+        addOrUpdateExam,
     } = useExamStore();
 
     const [generatingProgress, setGeneratingProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const isGenerating = useRef(false);
+    const [loadingExam, setLoadingExam] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const {
         provider,
@@ -140,19 +143,45 @@ export const PlaygroundScreen = () => {
         }
     }, [activeExam, setStatus, setQuestions, toastError, toastWarning, router, deleteExam, provider, modelName, customApiKeys, usePersonalKey]);
 
+    // Fetch exam if it exists in DB but not in store
+    useEffect(() => {
+        if (!hasHydrated || !id) return;
+
+        const exists = exams.some((e) => e.id === id);
+        if (!exists) {
+            setLoadingExam(true);
+            setFetchError(null);
+            fetch(`/api/exams/${id}`)
+                .then((res) => {
+                    if (!res.ok) throw new Error("Exam not found on server");
+                    return res.json();
+                })
+                .then((data) => {
+                    addOrUpdateExam(data.exam);
+                })
+                .catch((err) => {
+                    setFetchError(err.message || "Failed to load exam");
+                    router.push("/");
+                })
+                .finally(() => {
+                    setLoadingExam(false);
+                });
+        }
+    }, [id, exams, hasHydrated, addOrUpdateExam, router]);
+
     // Sync active exam with URL
     useEffect(() => {
-        if (hasHydrated && id && id !== activeExam?.id) {
+        if (hasHydrated && id && id !== activeExam?.id && exams.some((e) => e.id === id)) {
             selectExam(id);
         }
-    }, [id, activeExam?.id, selectExam, hasHydrated]);
+    }, [id, activeExam?.id, selectExam, hasHydrated, exams]);
 
     // If no active exam and not found in list, redirect back home
     useEffect(() => {
-        if (hasHydrated && id && !exams.find(e => e.id === id)) {
+        if (hasHydrated && id && !loadingExam && !exams.find(e => e.id === id) && !fetchError) {
             router.push("/");
         }
-    }, [id, exams, router, hasHydrated]);
+    }, [id, exams, router, hasHydrated, loadingExam, fetchError]);
 
     // Handle initial generation if status is idle
     useEffect(() => {
@@ -160,6 +189,15 @@ export const PlaygroundScreen = () => {
             generateAllQuestions();
         }
     }, [activeExam?.status, generateAllQuestions]);
+
+    if (loadingExam || !hasHydrated) {
+        return (
+            <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-primary px-4">
+                <FeaturedIcon icon={Zap} color="brand" theme="light" size="lg" className="animate-pulse" />
+                <h2 className="text-display-xs font-semibold text-primary">Loading your exam...</h2>
+            </div>
+        );
+    }
 
     if (!activeExam) return null;
 
@@ -582,6 +620,14 @@ export const PlaygroundScreen = () => {
                                     onClick={() => {
                                         setIsConfirmModalOpen(false);
                                         finishExam();
+                                        fetch(`/api/exams/${activeExam.id}/submit`, {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({
+                                                userAnswers: activeExam.userAnswers,
+                                                status: "completed"
+                                            })
+                                        }).catch((err) => console.error("Failed to submit exam:", err));
                                         router.push(`/result/${activeExam.id}`);
                                     }}
                                     className="flex-1"

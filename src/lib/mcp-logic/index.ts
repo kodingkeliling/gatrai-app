@@ -5,7 +5,8 @@ export const PROTECTED_TOOLS = [
     "list_exams",
     "get_exam",
     "get_users",
-    "save_approved_language_quiz"
+    "save_approved_language_quiz",
+    "analyze_exam_participants"
 ];
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkeliling.com";
@@ -110,6 +111,20 @@ export const TOOLS_LIST = [
                 }
             },
             required: ["hasUserExplicitlyApproved", "language", "skills", "questions"]
+        }
+    },
+    {
+        name: "analyze_exam_participants",
+        description: "Analyze participants who have taken a specific exam. Provides completion details, scores, answers, and detail analysis of their attempts.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                examId: {
+                    type: "string",
+                    description: "The original exam/quiz ID to analyze (e.g. the ID returned when saving the quiz)."
+                }
+            },
+            required: ["examId"]
         }
     }
 ];
@@ -294,6 +309,95 @@ export async function executeTool(
                     {
                         type: "text",
                         text: `Quiz saved successfully to GatrAI!\nURL to try: ${quizUrl}`
+                    }
+                ]
+            };
+        }
+
+        case "analyze_exam_participants": {
+            const { examId } = args;
+
+            const originalExam = await prisma.exam.findUnique({
+                where: { id: examId }
+            });
+
+            if (!originalExam) {
+                return {
+                    content: [{ type: "text", text: `Error: Exam with ID ${examId} not found.` }],
+                    isError: true
+                };
+            }
+
+            if (originalExam.userId !== userId) {
+                return {
+                    content: [{ type: "text", text: "Error: You can only analyze participants for exams you created." }],
+                    isError: true
+                };
+            }
+
+            const attempts = await prisma.exam.findMany({
+                where: { originalExamId: examId },
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            email: true
+                        }
+                    },
+                    questions: true
+                }
+            });
+
+            if (attempts.length === 0) {
+                return {
+                    content: [{ type: "text", text: "No participants have taken this exam yet." }]
+                };
+            }
+
+            const analysis = attempts.map((attempt) => {
+                const totalQuestions = attempt.questions.length;
+                const answeredQuestions = attempt.questions.filter((q) => q.answer !== null).length;
+                const correctQuestions = attempt.questions.filter((q) => q.score && q.score > 0.5).length;
+                
+                const scorePercentage = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
+
+                const detailQuestions = attempt.questions.map((q) => {
+                    let questionText = q.content;
+                    let correctAnswer = q.answer || "";
+                    if (q.content.trim().startsWith("{")) {
+                        try {
+                            const parsed = JSON.parse(q.content);
+                            questionText = parsed.description || parsed.content || q.content;
+                            correctAnswer = parsed.answer || "";
+                        } catch {}
+                    }
+
+                    return {
+                        question: questionText,
+                        participantAnswer: q.answer || "(No Answer)",
+                        correctAnswer: correctAnswer,
+                        isCorrect: q.score ? q.score > 0.5 : false
+                    };
+                });
+
+                return {
+                    participant: {
+                        name: attempt.user.name || "Anonymous User",
+                        email: attempt.user.email
+                    },
+                    status: attempt.status,
+                    startedAt: attempt.createdAt.toISOString(),
+                    progress: `${answeredQuestions}/${totalQuestions} answered`,
+                    score: `${scorePercentage}%`,
+                    answersDetail: detailQuestions
+                };
+            });
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(analysis, null, 2)
                     }
                 ]
             };
