@@ -66,3 +66,70 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+export async function POST(req: NextRequest) {
+    try {
+        const token = req.cookies.get(COOKIE_NAME)?.value;
+        const decodedUser = token ? verifyToken(token) : null;
+
+        if (!decodedUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const dbUser = await prisma.user.findUnique({ where: { email: decodedUser.email } });
+        if (!dbUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const { id, createdAt, config, questions, status } = await req.json();
+
+        if (!id || !config || !questions) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        // Check if exam already exists in database
+        const existingExam = await prisma.exam.findUnique({
+            where: { id }
+        });
+
+        if (existingExam) {
+            return NextResponse.json({ success: true, message: "Exam already synced" });
+        }
+
+        // Save exam and questions to database
+        const createdExam = await prisma.exam.create({
+            data: {
+                id,
+                userId: dbUser.id,
+                language: config.language,
+                skills: config.skills,
+                provider: "auto",
+                status: status || "ongoing",
+                createdAt: createdAt ? new Date(createdAt) : new Date()
+            }
+        });
+
+        await prisma.question.createMany({
+            data: questions.map((q: any) => {
+                const type = q.skill.toLowerCase();
+                const content = JSON.stringify({
+                    description: q.description,
+                    options: q.options,
+                    answer: q.answer
+                });
+
+                return {
+                    id: q.id,
+                    examId: createdExam.id,
+                    content,
+                    type
+                };
+            })
+        });
+
+        return NextResponse.json({ success: true, examId: createdExam.id });
+    } catch (error: any) {
+        console.error("Failed to sync local exam:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

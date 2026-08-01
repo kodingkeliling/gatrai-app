@@ -131,3 +131,33 @@ export async function GET(
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const token = req.cookies.get(COOKIE_NAME)?.value;
+        const decodedUser = token ? verifyToken(token) : null;
+
+        if (!decodedUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const dbUser = await prisma.user.findUnique({ where: { email: decodedUser.email } });
+        if (!dbUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const exam = await prisma.exam.findUnique({ where: { id } });
+        if (exam && exam.userId === dbUser.id) {
+            await prisma.exam.delete({ where: { id } });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Failed to delete exam:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

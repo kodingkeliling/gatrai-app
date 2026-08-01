@@ -13,6 +13,14 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkelilin
 
 export const TOOLS_LIST = [
     {
+        name: "get_language_quiz_template",
+        description: "Returns the strict guidelines and structured template for creating language quiz questions to ensure consistency with GatrAI's platform.",
+        inputSchema: {
+            type: "object",
+            properties: {}
+        }
+    },
+    {
         name: "get_ai_status",
         description: "Check the connection status of AI providers configured in GatrAI",
         inputSchema: {
@@ -140,6 +148,54 @@ export async function executeTool(
     }
 
     switch (name) {
+        case "get_language_quiz_template": {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `GatrAI Quiz Generation Guidelines:
+
+Each question MUST be created in a clean JSON format before showing it to the user.
+Do not output anything other than the JSON format when saving, but for brainstorming with the user, you must follow this template.
+
+Guidelines per skill:
+- Reading: Short text passage followed by a multiple choice question with exactly 4 options.
+- Listening: Conversation or speech transcript featuring 'MALE:', 'FEMALE:', or 'NARRATOR:' labels, followed by a multiple choice question with exactly 4 options.
+- Writing: Sentence containing a translation task or blank fill-in using the exact term '[blank]' (e.g. "I want to [blank] water" with answer "drink"). Set options to null.
+- Speaking: Short sentence in the target language for the user to read aloud. Set options to null. The answer field must match the exact transcript.
+
+JSON Question Structure for the 'save_approved_language_quiz' tool:
+{
+  "content": "JSON string containing the question details. This must be stringified",
+  "type": "reading | writing | speaking | listening"
+}
+
+The "content" field of each question object must be a JSON string with the following structure:
+{
+  "description": "The main question prompt, text, blank sentence, or conversation transcript. Use HTML tags like <b>, <i>, <br> for styling.",
+  "options": ["Option A", "Option B", "Option C", "Option D"] // or null for writing/speaking
+  "answer": "Correct option or correct answer text"
+}
+
+Example for Reading:
+{
+  "description": "Read the text and choose the correct answer: <br/> Budi pergi ke pasar untuk membeli buah. Apa yang dibeli Budi?",
+  "options": ["Sayuran", "Buah", "Daging", "Ikan"],
+  "answer": "Buah"
+}
+
+Example for Writing:
+{
+  "description": "Complete the sentence: <br/> She is a [blank] at the hospital.",
+  "options": null,
+  "answer": "doctor"
+}
+`
+                    }
+                ]
+            };
+        }
+
         case "get_ai_status": {
             const provider = args.provider;
             const status = await checkAIProviderStatus(provider);

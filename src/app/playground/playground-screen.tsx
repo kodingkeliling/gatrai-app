@@ -133,6 +133,20 @@ export const PlaygroundScreen = () => {
 
             setQuestions(allQuestions);
             setStatus("ongoing");
+
+            if (isAuthenticated && activeExam) {
+                fetch("/api/exams", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: activeExam.id,
+                        createdAt: activeExam.createdAt,
+                        config: activeExam.config,
+                        questions: allQuestions,
+                        status: "ongoing"
+                    })
+                }).catch((err) => console.error("Failed to sync exam to server:", err));
+            }
         } catch (err: any) {
             console.error(err);
             const errorMessage = err.message || "Failed to generate questions. Please try again.";
