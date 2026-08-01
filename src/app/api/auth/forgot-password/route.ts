@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requestPasswordReset } from "@/api/auth";
+import { sendEmail } from "@/lib/send-email";
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,11 +11,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Email is required" }, { status: 400 });
         }
 
-        // requestPasswordReset doesn't reveal if email exists or not
         const { resetToken } = await requestPasswordReset(email);
 
-        // In a real app, send the resetToken via email.
-        // For dev purposes, we return the token in the response.
+        // Send email if a token was generated (i.e. the email exists in our DB)
+        if (resetToken) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkeliling.com";
+            const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
+
+            await sendEmail({
+                to: email,
+                subject: "Reset Password GatrAI",
+                title: "Reset Password",
+                name: email,
+                message: `Kami menerima permintaan untuk mereset password akun GatrAI Anda. Klik link di bawah ini untuk membuat password baru. Link ini berlaku selama 1 jam.`,
+                actionLink: resetLink,
+            });
+        }
+
         const isDev = process.env.NODE_ENV !== "production";
         return NextResponse.json(
             {

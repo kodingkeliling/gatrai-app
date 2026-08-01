@@ -21,29 +21,28 @@ export async function POST(req: NextRequest) {
 
         const cleanClientId = clientId || "mcp-default-client";
 
-        // Generate the code and expiration
+        // Remove any stale pending codes (no accessToken yet) for this user+client to keep DB clean
+        await prisma.mcpOAuthToken.deleteMany({
+            where: {
+                userId,
+                clientId: cleanClientId,
+                accessToken: null,
+                code: { not: null },
+            }
+        });
+
+        // Generate a fresh auth code
         const { code, expiresAt } = generateAuthCode();
 
-        // Create or update active token for the user/client
-        await prisma.mcpOAuthToken.upsert({
-            where: {
-                code: code // code is unique, it's safe
-            },
-            create: {
+        // Always create — the freshly generated code is guaranteed unique
+        await prisma.mcpOAuthToken.create({
+            data: {
                 userId,
                 code,
                 codeChallenge: codeChallenge || null,
                 codeChallengeMethod: codeChallengeMethod || null,
                 clientId: cleanClientId,
-                expiresAt
-            },
-            update: {
-                userId,
-                code,
-                codeChallenge: codeChallenge || null,
-                codeChallengeMethod: codeChallengeMethod || null,
-                clientId: cleanClientId,
-                expiresAt
+                expiresAt,
             }
         });
 

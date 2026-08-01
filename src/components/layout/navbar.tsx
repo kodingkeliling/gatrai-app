@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/foundations/theme-toggle";
 import { HistorySlideout } from "@/components/exam/history-slideout";
 import { useAuthStore } from "@/store/use-auth-store";
 import { cx } from "@/utils/cx";
+import { MCPGuideModal } from "@/components/layout/mcp-guide-modal";
 
 const NAV_ITEMS = [
     { label: "Beranda", href: "/" },
@@ -136,11 +137,13 @@ function UserDropdown() {
 export const Navbar = () => {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mcpModalOpen, setMcpModalOpen] = useState(false);
 
     const { isAuthenticated, isAuthReady } = useAuthStore();
 
     return (
-        <header className="relative z-50 w-full animate-[fadeSlideDown_0.6s_ease-out_both]">
+        <>
+            <header className="relative z-50 w-full animate-[fadeSlideDown_0.6s_ease-out_both]">
             <div className="mx-auto flex w-full max-w-container items-center justify-between px-4 py-5 md:px-8">
                 {/* Logo + Desktop nav */}
                 <div className="flex items-center gap-6">
@@ -185,8 +188,8 @@ export const Navbar = () => {
                             <Button size="sm" color="secondary" href="/login" className="hidden sm:flex">
                                 Masuk
                             </Button>
-                            <Button size="sm" href="/register" className="hidden md:flex">
-                                Daftar Gratis
+                            <Button size="sm" onClick={() => setMcpModalOpen(true)} className="hidden md:flex">
+                                Cara Gratis
                             </Button>
                         </>
                     )}
@@ -237,11 +240,14 @@ export const Navbar = () => {
                     {!isAuthReady ? null : !isAuthenticated && (
                         <div className="flex gap-2 pt-2 border-t border-secondary mt-2">
                             <Button size="sm" color="secondary" href="/login" className="flex-1">Masuk</Button>
-                            <Button size="sm" href="/register" className="flex-1">Daftar Gratis</Button>
+                            <Button size="sm" onClick={() => { setMobileOpen(false); setMcpModalOpen(true); }} className="flex-1">Cara Gratis</Button>
                         </div>
                     )}
                 </div>
             )}
         </header>
+
+            <MCPGuideModal isOpen={mcpModalOpen} onClose={() => setMcpModalOpen(false)} />
+        </>
     );
 };
