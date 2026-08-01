@@ -19,7 +19,8 @@ import { Dialog, DialogTrigger, Modal, ModalOverlay } from "../../components/app
 import { Heading as AriaHeading } from "react-aria-components";
 import { useToast } from "@/contexts/use-toast";
 import { useAuthStore } from "@/store/use-auth-store";
-import { PlaygroundUserDropdown } from "@/components/layout/playground-navbar";
+import { UserDropdown } from "@/components/layout/user-dropdown";
+import { Badge } from "@/components/base/badges/badges";
 import Image from "next/image";
 import { AdsModal } from "@/components/shared-assets/ads-modal";
 import { ADS, PAID_PLAN_IDS } from "@/data/ads";
@@ -354,11 +355,11 @@ export const PlaygroundScreen = () => {
         }
     };
 
-    const SKILL_COLORS: Record<string, string> = {
-        Reading: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300",
-        Writing: "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300",
-        Speaking: "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300",
-        Listening: "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300",
+    const SKILL_BADGE_COLORS: Record<string, "blue" | "purple" | "orange" | "success"> = {
+        Reading: "blue",
+        Writing: "purple",
+        Speaking: "orange",
+        Listening: "success",
     };
 
     if (activeExam.startTime === null) {
@@ -382,7 +383,7 @@ export const PlaygroundScreen = () => {
                             <ThemeToggle />
                             {isAuthenticated && (
                                 <div className="hidden md:block">
-                                    <PlaygroundUserDropdown />
+                                    <UserDropdown />
                                 </div>
                             )}
                         </div>
@@ -410,11 +411,16 @@ export const PlaygroundScreen = () => {
                             </div>
                             <div className="flex justify-between py-1.5 text-sm border-t border-secondary">
                                 <span className="text-tertiary">Skill yang Diuji</span>
-                                <div className="flex flex-wrap gap-1 justify-end max-w-[200px]">
+                                <div className="flex flex-wrap gap-1.5 justify-end max-w-[200px]">
                                     {config.skills.map((skill) => (
-                                        <span key={skill} className={cx("rounded px-2 py-0.5 text-xs font-semibold", SKILL_COLORS[skill] ?? "bg-secondary text-secondary")}>
+                                        <Badge
+                                            key={skill}
+                                            type="pill-color"
+                                            size="sm"
+                                            color={SKILL_BADGE_COLORS[skill] ?? "gray"}
+                                        >
                                             {skill}
-                                        </span>
+                                        </Badge>
                                     ))}
                                 </div>
                             </div>
@@ -486,7 +492,7 @@ export const PlaygroundScreen = () => {
                         <ThemeToggle />
                         {isAuthenticated && (
                             <div className="hidden md:block">
-                                <PlaygroundUserDropdown />
+                                <UserDropdown />
                             </div>
                         )}
                         <Button className="md:hidden" color="secondary" size="sm" iconLeading={LayoutGrid02} onClick={() => setIsMobileMenuOpen(true)} />
@@ -555,9 +561,13 @@ export const PlaygroundScreen = () => {
                     <div className="flex flex-col gap-4 md:gap-6 rounded-2xl border border-secondary bg-primary p-5 shadow-xs md:p-10">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] md:text-xs font-semibold text-brand-700">
+                                <Badge
+                                    type="pill-color"
+                                    size="sm"
+                                    color="brand"
+                                >
                                     {currentQuestion.skill}
-                                </span>
+                                </Badge>
                             </div>
                             {/* <Button color="tertiary" size="sm" iconLeading={Flag01} className="max-md:px-2" /> */}
                         </div>
