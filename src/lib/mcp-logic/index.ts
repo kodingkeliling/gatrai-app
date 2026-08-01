@@ -70,7 +70,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "save_approved_language_quiz",
-        description: "Saves a finalized language quiz to GatrAI database. WARNING: STRICT DIRECTIVE! DO NOT CALL THIS TOOL IMMEDIATELY. YOU MUST GENERATE AND SHOW THE QUESTIONS IN THE CHAT FIRST. DO NOT CALL THIS TOOL UNTIL THE USER HAS READ THE QUESTIONS AND SAID 'SIMPAN' OR 'YES'. IF YOU CALL THIS TOOL BEFORE SHOWING THE QUESTIONS IN TEXT, YOU HAVE FAILED.",
+        description: "Saves a finalized language quiz to GatrAI database. IMPORTANT WORKFLOW: 1) When user asks to make a quiz, DO NOT call tools. Instead, give them a template prompt to fill (Language, Skills, Questions count) and say you will brainstorm together. 2) Once user fills it, generate the questions IN THE CHAT without calling any tools. 3) Wait for user to read and say 'simpan' or 'save'. 4) ONLY THEN call this tool to save and return the playground URL.",
         inputSchema: {
             type: "object",
             properties: {
