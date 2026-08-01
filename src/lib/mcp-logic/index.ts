@@ -110,9 +110,9 @@ export const TOOLS_LIST = [
                                 description: "The full question text, reading passage, listening transcript, or speaking prompt. HTML tags like <b>, <i>, <br/> are supported. For Listening: MUST include the conversation transcript using MALE:, FEMALE:, NARRATOR: labels, then a 'Question:' line at the end. For Speaking: MUST include the sentence to be read aloud."
                             },
                             options: {
-                                type: ["array", "null"],
+                                type: "array",
                                 items: { type: "string" },
-                                description: "For Reading and Listening: REQUIRED — provide exactly 4 string options. For Speaking and Writing: MUST be null."
+                                description: "For Reading and Listening: REQUIRED — provide exactly 4 string options. For Speaking and Writing: MUST be null or omitted."
                             },
                             answer: {
                                 type: "string",
