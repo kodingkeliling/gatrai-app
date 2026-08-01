@@ -6,7 +6,8 @@ import type { Key } from "react-aria-components";
 import { Modal } from "@/components/shared-assets/modal";
 import { Button } from "@/components/base/buttons/button";
 import { Tabs } from "@/components/application/tabs/tabs";
-import { NativeSelect } from "@/components/base/select/select-native";
+import { Select } from "@/components/base/select/select";
+import { PaginationDot } from "@/components/application/pagination/pagination-dot";
 import { ChevronLeft, ChevronRight, Link01, Copy01, PuzzlePiece01 } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
 import { useToast } from "@/contexts/use-toast";
@@ -86,13 +87,16 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
             <div className="flex flex-col">
                 {/* Tabs */}
                 <div className="px-6 pt-2 pb-4">
-                    <NativeSelect
+                    <Select
                         aria-label="Tabs"
-                        value={activeTool as string}
-                        onChange={(event) => handleToolChange(event.target.value)}
-                        options={TAB_ITEMS.map((tab) => ({ label: tab.label, value: tab.id }))}
+                        size="md"
+                        selectedKey={activeTool}
+                        onSelectionChange={handleToolChange}
+                        items={TAB_ITEMS}
                         className="w-full sm:hidden"
-                    />
+                    >
+                        {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+                    </Select>
                     <Tabs selectedKey={activeTool} onSelectionChange={handleToolChange} className="w-full max-sm:hidden">
                         <Tabs.List type="button-minimal" items={TAB_ITEMS} className="w-full bg-secondary/30 rounded-lg p-1">
                             {(tab) => <Tabs.Item {...tab} className="w-fit text-center" />}
@@ -104,13 +108,15 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                 <div className="mx-6 mb-4 flex items-center gap-2 rounded-xl border border-secondary bg-secondary/30 px-4 py-2.5">
                     <Link01 className="size-4 shrink-0 text-tertiary" />
                     <span className="flex-1 truncate text-xs font-mono text-secondary">{MCP_ENDPOINT}</span>
-                    <button
+                    <Button
+                        size="sm"
+                        color="link-color"
+                        iconLeading={Copy01}
                         onClick={handleCopy}
-                        className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 cursor-pointer transition-colors"
+                        className="px-0 py-0 h-auto"
                     >
-                        <Copy01 className="size-3.5" />
                         Salin
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Carousel image */}
@@ -146,22 +152,12 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                         Sebelumnya
                     </Button>
 
-                    {/* Step dots */}
-                    <div className="flex items-center gap-1.5">
-                        {Array.from({ length: totalSteps }).map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setStep(i)}
-                                className={cx(
-                                    "rounded-full transition-all duration-200 cursor-pointer",
-                                    i === step
-                                        ? "w-4 h-2 bg-brand-600"
-                                        : "w-2 h-2 bg-secondary hover:bg-tertiary"
-                                )}
-                                aria-label={`Langkah ${i + 1}`}
-                            />
-                        ))}
-                    </div>
+                    <PaginationDot
+                        size="md"
+                        page={step + 1}
+                        total={totalSteps}
+                        onPageChange={(page) => setStep(page - 1)}
+                    />
 
                     {step < totalSteps - 1 ? (
                         <Button
