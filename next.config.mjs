@@ -4,7 +4,7 @@ const nextConfig = {
     experimental: {
         optimizePackageImports: ["@untitledui/icons"],
     },
-    transpilePackages: ["@untitledui/icons"],
+    transpilePackages: ["@untitledui/icons", "@modelcontextprotocol/sdk"],
 };
 
 export default nextConfig;

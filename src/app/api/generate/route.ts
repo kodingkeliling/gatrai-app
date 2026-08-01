@@ -6,7 +6,8 @@ import {
     GEMINI_API_KEY as DEFAULT_GEMINI_API_KEY,
     GROQ_API_KEY as DEFAULT_GROQ_API_KEY,
     OPENAI_API_KEY as DEFAULT_OPENAI_API_KEY,
-    ANTHROPIC_API_KEY as DEFAULT_ANTHROPIC_API_KEY
+    ANTHROPIC_API_KEY as DEFAULT_ANTHROPIC_API_KEY,
+    OPENROUTER_API_KEY as DEFAULT_OPENROUTER_API_KEY
 } from "@/config";
 
 async function callGemini(prompt: string, model: string, customKey?: string): Promise<string> {
@@ -128,6 +129,32 @@ async function callAnthropic(prompt: string, model: string, customKey?: string):
     return data.content?.[0]?.text || "";
 }
 
+async function callOpenRouter(prompt: string, model: string, customKey?: string): Promise<string> {
+    const apiKey = customKey || DEFAULT_OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://gatrai.id",
+            "X-Title": "GatrAI Exam Generator",
+        },
+        body: JSON.stringify({
+            model: model || "openrouter/auto",
+            messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                ...FINE_TUNE_EXAMPLES,
+                { role: "user", content: prompt },
+            ],
+        }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "OpenRouter API error");
+    return data.choices?.[0]?.message?.content || "";
+}
+
 function parseCSV(raw: string, defaultSkill: SkillType): Question[] {
     console.log("[groq] Raw response:", raw);
     const cleanRaw = raw.replace(/```[a-z]*\n?/gi, "").replace(/```/g, "").trim();
@@ -201,7 +228,8 @@ export async function POST(req: NextRequest) {
             case "groq": rawResponse = await callGroq(userPrompt, activeModel, customApiKey); break;
             case "openai": rawResponse = await callOpenAI(userPrompt, activeModel, customApiKey); break;
             case "anthropic": rawResponse = await callAnthropic(userPrompt, activeModel, customApiKey); break;
-            default: rawResponse = await callGroq(userPrompt, activeModel, customApiKey); break;
+            case "openrouter": rawResponse = await callOpenRouter(userPrompt, activeModel, customApiKey); break;
+            default: rawResponse = await callOpenRouter(userPrompt, "openrouter/auto", customApiKey); break;
         }
 
         console.log(`[${activeProvider}] Raw response:`, rawResponse);

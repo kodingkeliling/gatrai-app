@@ -36,9 +36,40 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  exams     Exam[]
+  exams          Exam[]
+  mcpOAuthTokens McpOAuthToken[]
+  mcpApiKeys     McpApiKey[]
 
   @@map("users")
+}
+
+model McpOAuthToken {
+  id                  String    @id @default(cuid())
+  userId              String
+  code                String?   @unique
+  accessToken         String?   @unique
+  refreshToken        String?   @unique
+  codeChallenge       String?
+  codeChallengeMethod String?
+  clientId            String?   @default("mcp-default-client")
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mcp_oauth_tokens")
+}
+
+model McpApiKey {
+  id        String    @id @default(cuid())
+  userId    String
+  key       String    @unique
+  label     String?   @default("default")
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mcp_api_keys")
 }
 
 model IpTrial {

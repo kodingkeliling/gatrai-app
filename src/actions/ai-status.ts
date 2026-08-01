@@ -4,7 +4,8 @@ import {
     GEMINI_API_KEY, 
     GROQ_API_KEY, 
     OPENAI_API_KEY, 
-    ANTHROPIC_API_KEY 
+    ANTHROPIC_API_KEY,
+    OPENROUTER_API_KEY
 } from "@/config";
 
 export type ProviderStatus = "connected" | "no-quota" | "disconnected";
@@ -14,7 +15,8 @@ export async function checkAIProviderStatus(provider: string, customKey?: string
         provider === "gemini" ? GEMINI_API_KEY :
         provider === "groq" ? GROQ_API_KEY :
         provider === "openai" ? OPENAI_API_KEY :
-        provider === "anthropic" ? ANTHROPIC_API_KEY : null
+        provider === "anthropic" ? ANTHROPIC_API_KEY :
+        provider === "openrouter" ? OPENROUTER_API_KEY : null
     );
 
     if (!key || key === `${provider.toUpperCase()}_API_KEY`) {
@@ -48,6 +50,13 @@ export async function checkAIProviderStatus(provider: string, customKey?: string
                     "x-api-key": key,
                     "anthropic-version": "2023-06-01"
                 }
+            });
+            return res.ok ? "connected" : "no-quota";
+        }
+
+        if (provider === "openrouter") {
+            const res = await fetch("https://openrouter.ai/api/v1/models", {
+                headers: { "Authorization": `Bearer ${key}` }
             });
             return res.ok ? "connected" : "no-quota";
         }

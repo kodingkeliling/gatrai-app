@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { AI_PROVIDER, AI_MODEL_NAME } from "@/config";
 import { checkAIProviderStatus, ProviderStatus } from "@/actions/ai-status";
 
-export type AIProvider = "gemini" | "groq" | "openai" | "anthropic" | "custom";
+export type AIProvider = "gemini" | "groq" | "openai" | "anthropic" | "openrouter" | "custom";
 
 interface AIModel {
     id: string;
@@ -35,13 +35,14 @@ interface ConfigState {
 export const useConfigStore = create<ConfigState>()(
     persist(
         (set, get) => ({
-            provider: (AI_PROVIDER as AIProvider) || "groq",
-            modelName: AI_MODEL_NAME || "llama-3.3-70b-versatile",
+            provider: (AI_PROVIDER as AIProvider) || "openrouter",
+            modelName: AI_MODEL_NAME || "openrouter/auto",
             customApiKeys: {
                 gemini: null,
                 groq: null,
                 openai: null,
                 anthropic: null,
+                openrouter: null,
                 custom: null,
             },
             usePersonalKey: false,
@@ -50,6 +51,7 @@ export const useConfigStore = create<ConfigState>()(
                 groq: "disconnected",
                 openai: "disconnected",
                 anthropic: "disconnected",
+                openrouter: "disconnected",
                 custom: "disconnected",
             },
             isManualSelection: false,
@@ -113,6 +115,8 @@ export const useConfigStore = create<ConfigState>()(
                             provider: data.provider,
                             modelName: data.modelName
                         });
+                        // Check connection status for the synced provider
+                        get().updateStatus(data.provider);
                     }
                 } catch (err) {
                     console.error("Failed to sync runtime config:", err);
@@ -145,6 +149,12 @@ export const DEFAULT_MODELS: Record<AIProvider, AIModel[]> = {
     ],
     anthropic: [
         { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", provider: "anthropic" },
+    ],
+    openrouter: [
+        { id: "openrouter/auto", name: "Auto (Best Available)", provider: "openrouter" },
+        { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", provider: "openrouter" },
+        { id: "google/gemini-2.0-flash-exp:free", name: "Gemini 2.0 Flash (Free)", provider: "openrouter" },
+        { id: "mistralai/mixtral-8x7b-instruct", name: "Mixtral 8x7B", provider: "openrouter" },
     ],
     custom: []
 };

@@ -15,8 +15,9 @@ export const GlobalTokenBar = () => {
 
     // User is in auto-only mode if: not logged in, OR plan is not eksklusif/luxury
     const isAutoOnly = !user || !(user.planId === "eksklusif" || user.planId === "luxury");
-    // Show AUTO label when: user is auto-only (regardless of isManualSelection), or hasn't made a manual selection
-    const showAsAuto = isAutoOnly || !isManualSelection;
+    // Show AUTO label when: user is auto-only (regardless of isManualSelection),
+    // or using openrouter/auto mode, or hasn't made a manual selection
+    const showAsAuto = isAutoOnly || !isManualSelection || provider === "openrouter";
 
     const getStatusConfig = () => {
         if (status === "connected") {
