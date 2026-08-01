@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LinkExternal01, XClose } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { Badge } from "@/components/base/badges/badges";
 import { type Ad } from "@/data/ads";
 import Image from "next/image";
-import { cx } from "@/utils/cx";
 
 interface AdsModalProps {
     ad: Ad;
@@ -15,7 +14,6 @@ interface AdsModalProps {
 
 export const AdsModal = ({ ad, onClose }: AdsModalProps) => {
     const [secondsLeft, setSecondsLeft] = useState(5);
-    const router = useRouter();
 
     useEffect(() => {
         if (secondsLeft <= 0) return;
@@ -27,7 +25,7 @@ export const AdsModal = ({ ad, onClose }: AdsModalProps) => {
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 px-4">
-            <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-primary shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-lg rounded-2xl overflow-hidden bg-primary shadow-2xl animate-in zoom-in-95 duration-300">
                 {/* Close / Countdown button */}
                 <div className="absolute top-3 right-3 z-10">
                     {canClose ? (
@@ -54,7 +52,7 @@ export const AdsModal = ({ ad, onClose }: AdsModalProps) => {
                 </div>
 
                 {/* Image */}
-                <div className="relative h-52 w-full bg-secondary">
+                <div className="relative h-64 w-full bg-secondary sm:h-72">
                     <Image
                         src={ad.image}
                         alt={ad.title}
@@ -65,21 +63,21 @@ export const AdsModal = ({ ad, onClose }: AdsModalProps) => {
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col gap-4 p-5">
-                    <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-5 p-6">
+                    <div className="flex flex-col gap-2">
                         {ad.badge && (
-                            <span className="w-fit rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                            <Badge type="pill-color" size="sm" color="brand">
                                 {ad.badge}
-                            </span>
+                            </Badge>
                         )}
-                        <h3 className="text-base font-semibold text-primary">{ad.title}</h3>
+                        <h3 className="text-lg font-semibold text-primary">{ad.title}</h3>
                         <p className="text-sm text-tertiary leading-relaxed">{ad.description}</p>
                     </div>
 
                     <div className="flex gap-3">
                         <Button
                             color="secondary"
-                            size="sm"
+                            size="md"
                             className="flex-1"
                             onClick={onClose}
                             isDisabled={!canClose}
@@ -87,7 +85,7 @@ export const AdsModal = ({ ad, onClose }: AdsModalProps) => {
                             {canClose ? "Lewati" : `Lewati (${secondsLeft}s)`}
                         </Button>
                         <Button
-                            size="sm"
+                            size="md"
                             iconTrailing={LinkExternal01}
                             href={ad.visitUrl}
                             target="_blank"
