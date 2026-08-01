@@ -197,10 +197,10 @@ export const RegisterPage = () => {
                 </div>
                 <div className="z-10 flex flex-col gap-2 md:gap-3">
                     <h1 className="text-display-xs font-semibold text-primary md:text-display-sm">
-                        Daftar Sekarang
+                        Mulai Latihan Bahasa
                     </h1>
                     <p className="text-md text-tertiary">
-                        Daftar untuk menjadi siswa GatrAI.
+                        Daftar gratis dan mulai latihan soal bahasa asing dengan AI — English, Japanese, Korean & lebih banyak lagi.
                     </p>
                 </div>
             </div>

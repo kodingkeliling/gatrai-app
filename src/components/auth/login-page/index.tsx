@@ -164,15 +164,15 @@ export const LoginPage = () => {
             rightPanelContent={
                 <div className="flex flex-col gap-3">
                     <h2 className="text-2xl font-bold text-white">
-                        Buat soal latihan dalam hitungan detik.
+                        Kuasai bahasa asing dengan latihan soal AI.
                     </h2>
                     <p className="text-sm text-white/70 leading-relaxed">
-                        Soal dipersonalisasi menggunakan AI, selalu unik setiap sesi.
+                        GatrAI membuat soal bahasa yang dipersonalisasi — Reading, Writing, Speaking & Listening — secara otomatis.
                     </p>
                     <div className="flex flex-col gap-1.5 mt-1">
-                        <span className="text-sm text-white/60">✓ 14+ bahasa tersedia</span>
-                        <span className="text-sm text-white/60">✓ Soal selalu unik</span>
-                        <span className="text-sm text-white/60">✓ Reading, Writing, Speaking, Listening</span>
+                        <span className="text-sm text-white/60">✓ English, Japanese, Korean & 11 bahasa lainnya</span>
+                        <span className="text-sm text-white/60">✓ Soal unik setiap sesi, dibuat oleh AI</span>
+                        <span className="text-sm text-white/60">✓ Hasil penilaian langsung tanpa menunggu</span>
                     </div>
                 </div>
             }
@@ -202,7 +202,7 @@ export const LoginPage = () => {
                         Selamat datang kembali
                     </h1>
                     <p className="text-md text-tertiary">
-                        Masuk ke akun {APP_NAME} Anda untuk melanjutkan.
+                        Masuk dan lanjutkan latihan bahasa Anda bersama GatrAI.
                     </p>
                 </div>
             </div>

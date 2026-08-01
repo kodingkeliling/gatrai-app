@@ -255,11 +255,11 @@ export const ConfigForm = ({ isPlayground = false }: { isPlayground?: boolean })
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                         <h2 className="text-display-xs font-semibold text-primary">
-                        {isPlayground ? "Buat Quiz" : "Coba Buat Quiz"}
+                        {isPlayground ? "Buat Soal Bahasa" : "Coba Buat Soal Bahasa"}
                     </h2>
                     </div>
                     <p className="text-sm text-tertiary">
-                        Konfigurasi parameter untuk menghasilkan quiz bertenaga AI. Gratis untuk 10 soal pertama.
+                        Pilih bahasa yang ingin kamu kuasai, lalu AI akan membuat soal latihan Reading, Writing, Speaking, atau Listening secara otomatis.
                     </p>
                 </div>
 
@@ -463,7 +463,7 @@ export const ConfigForm = ({ isPlayground = false }: { isPlayground?: boolean })
                 </div>
 
                 <Button size="xl" onClick={handleGenerate} disabled={isLoading} isLoading={isLoading} className="w-full">
-                    Buat Quiz Sekarang
+                    Buat Soal Sekarang
                 </Button>
 
                 <CustomKeyModal
