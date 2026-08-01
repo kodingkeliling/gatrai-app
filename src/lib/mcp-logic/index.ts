@@ -124,7 +124,7 @@ export const TOOLS_LIST = [
                                 description: "The skill type in lowercase."
                             }
                         },
-                        required: ["description", "options", "answer", "type"]
+                        required: ["description", "answer", "type"]
                     }
                 }
             },
