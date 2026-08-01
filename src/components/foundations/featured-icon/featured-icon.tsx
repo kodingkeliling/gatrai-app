@@ -71,11 +71,11 @@ const styles = sortCx({
             xl: "size-14 rounded-xl",
         },
         colors: {
-            brand: "",
+            brand: "text-fg-brand-primary ring-fg-brand-primary/30",
             gray: "text-fg-secondary ring-primary",
-            error: "",
-            warning: "",
-            success: "",
+            error: "text-fg-error-primary ring-fg-error-primary/30",
+            warning: "text-fg-warning-primary ring-fg-warning-primary/30",
+            success: "text-fg-success-primary ring-fg-success-primary/30",
         },
     },
     "modern-neue": {
@@ -91,11 +91,11 @@ const styles = sortCx({
             xl: "size-14 rounded-[14px] before:rounded-[10px]",
         },
         colors: {
-            brand: "",
+            brand: "text-fg-brand-primary ring-fg-brand-primary/30",
             gray: "text-fg-secondary ring-primary",
-            error: "",
-            warning: "",
-            success: "",
+            error: "text-fg-error-primary ring-fg-error-primary/30",
+            warning: "text-fg-warning-primary ring-fg-warning-primary/30",
+            success: "text-fg-success-primary ring-fg-success-primary/30",
         },
     },
 

@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import type { Key } from "react-aria-components";
 import { Modal } from "@/components/shared-assets/modal";
 import { Button } from "@/components/base/buttons/button";
-import { ChevronLeft, ChevronRight, Link01, Copy01 } from "@untitledui/icons";
+import { Tabs } from "@/components/application/tabs/tabs";
+import { NativeSelect } from "@/components/base/select/select-native";
+import { ChevronLeft, ChevronRight, Link01, Copy01, PuzzlePiece01 } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
 import { useToast } from "@/contexts/use-toast";
 
@@ -43,17 +46,22 @@ interface MCPGuideModalProps {
     onClose: () => void;
 }
 
+const TAB_ITEMS = [
+    { id: "chatgpt", label: "ChatGPT" },
+    { id: "claude", label: "Claude" },
+];
+
 export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
     const { toastSuccess } = useToast();
-    const [activeTool, setActiveTool] = useState<AITool>("chatgpt");
+    const [activeTool, setActiveTool] = useState<Key>("chatgpt");
     const [step, setStep] = useState(0);
 
-    const guide = GUIDES[activeTool];
+    const guide = GUIDES[activeTool as AITool];
     const totalSteps = guide.steps.length;
     const currentStep = guide.steps[step];
 
-    const handleToolChange = (tool: AITool) => {
-        setActiveTool(tool);
+    const handleToolChange = (key: Key) => {
+        setActiveTool(key);
         setStep(0);
     };
 
@@ -66,114 +74,110 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
         <Modal
             isOpen={isOpen}
             onOpenChange={(open) => !open && onClose()}
-            maxWidth="lg"
-            showHeader={false}
+            maxWidth="2xl"
+            title={`Cara Gratis: Connect GatrAI ke ${guide.title}`}
+            description="Ikuti langkah-langkah berikut untuk menghubungkan GatrAI MCP ke model AI favorit Anda."
+            icon={PuzzlePiece01}
+            iconTheme="modern"
+            iconColor="gray"
             showFooter={false}
             bodyClassName="!overflow-hidden"
         >
-            {/* Tab bar */}
-            <div className="flex items-center gap-1 border-b border-secondary px-4 pt-4 pb-0 shrink-0">
-                {(["chatgpt", "claude"] as AITool[]).map((tool) => (
-                    <button
-                        key={tool}
-                        onClick={() => handleToolChange(tool)}
-                        className={cx(
-                            "px-4 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-colors capitalize cursor-pointer",
-                            activeTool === tool
-                                ? "border-brand-600 text-brand-700 dark:text-brand-400"
-                                : "border-transparent text-tertiary hover:text-secondary"
-                        )}
-                    >
-                        {tool === "chatgpt" ? "ChatGPT" : "Claude"}
-                    </button>
-                ))}
-            </div>
-
-            {/* Title */}
-            <div className="px-6 pt-5 pb-2">
-                <h2 className="text-lg font-semibold text-primary">
-                    Cara Gratis: Connect GatrAI ke {guide.title}
-                </h2>
-                <p className="text-sm text-tertiary mt-0.5">
-                    Ikuti langkah-langkah berikut untuk menghubungkan GatrAI MCP.
-                </p>
-            </div>
-
-            {/* MCP URL copy */}
-            <div className="mx-6 mb-4 flex items-center gap-2 rounded-xl border border-secondary bg-secondary/30 px-4 py-2.5">
-                <Link01 className="size-4 shrink-0 text-tertiary" />
-                <span className="flex-1 truncate text-xs font-mono text-secondary">{MCP_ENDPOINT}</span>
-                <button
-                    onClick={handleCopy}
-                    className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 cursor-pointer transition-colors"
-                >
-                    <Copy01 className="size-3.5" />
-                    Salin
-                </button>
-            </div>
-
-            {/* Carousel image */}
-            <div className="mx-6 mb-3 overflow-hidden rounded-xl border border-secondary bg-secondary/20">
-                <div className="relative aspect-video w-full">
-                    <Image
-                        key={`${activeTool}-${step}`}
-                        src={currentStep.image}
-                        alt={`Langkah ${step + 1}`}
-                        fill
-                        className="object-contain animate-in fade-in duration-300"
+            <div className="flex flex-col">
+                {/* Tabs */}
+                <div className="px-6 pt-2 pb-4">
+                    <NativeSelect
+                        aria-label="Tabs"
+                        value={activeTool as string}
+                        onChange={(event) => handleToolChange(event.target.value)}
+                        options={TAB_ITEMS.map((tab) => ({ label: tab.label, value: tab.id }))}
+                        className="w-full sm:hidden"
                     />
+                    <Tabs selectedKey={activeTool} onSelectionChange={handleToolChange} className="w-full max-sm:hidden">
+                        <Tabs.List type="button-minimal" items={TAB_ITEMS} className="w-full bg-secondary/30 rounded-lg p-1">
+                            {(tab) => <Tabs.Item {...tab} className="w-fit text-center" />}
+                        </Tabs.List>
+                    </Tabs>
                 </div>
-            </div>
 
-            {/* Caption */}
-            <p className="mx-6 mb-4 text-sm text-secondary text-center leading-relaxed">
-                <span className="font-semibold text-brand-700 dark:text-brand-400">Langkah {step + 1}.</span>{" "}
-                {currentStep.caption}
-            </p>
+                {/* MCP URL copy */}
+                <div className="mx-6 mb-4 flex items-center gap-2 rounded-xl border border-secondary bg-secondary/30 px-4 py-2.5">
+                    <Link01 className="size-4 shrink-0 text-tertiary" />
+                    <span className="flex-1 truncate text-xs font-mono text-secondary">{MCP_ENDPOINT}</span>
+                    <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 cursor-pointer transition-colors"
+                    >
+                        <Copy01 className="size-3.5" />
+                        Salin
+                    </button>
+                </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between gap-3 px-6 pb-6">
-                <Button
-                    size="sm"
-                    color="secondary"
-                    iconLeading={ChevronLeft}
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
-                    isDisabled={step === 0}
-                >
-                    Sebelumnya
-                </Button>
-
-                {/* Step dots */}
-                <div className="flex items-center gap-1.5">
-                    {Array.from({ length: totalSteps }).map((_, i) => (
-                        <button
-                            key={i}
-                            onClick={() => setStep(i)}
-                            className={cx(
-                                "rounded-full transition-all duration-200 cursor-pointer",
-                                i === step
-                                    ? "w-4 h-2 bg-brand-600"
-                                    : "w-2 h-2 bg-secondary hover:bg-tertiary"
-                            )}
-                            aria-label={`Langkah ${i + 1}`}
+                {/* Carousel image */}
+                <div className="mx-6 mb-3 overflow-hidden rounded-xl border border-secondary bg-secondary/20">
+                    <div className="relative aspect-video w-full">
+                        <Image
+                            key={`${activeTool}-${step}`}
+                            src={currentStep.image}
+                            alt={`Langkah ${step + 1}`}
+                            fill
+                            className="object-contain animate-in fade-in duration-300"
                         />
-                    ))}
+                    </div>
                 </div>
 
-                {step < totalSteps - 1 ? (
+                {/* Caption */}
+                <p className="mx-6 mb-6 text-sm text-secondary text-center leading-relaxed h-10 flex items-center justify-center">
+                    <span>
+                        <span className="font-semibold text-brand-700 dark:text-brand-400">Langkah {step + 1}.</span>{" "}
+                        {currentStep.caption}
+                    </span>
+                </p>
+
+                {/* Navigation */}
+                <div className="flex items-center justify-between gap-3 px-6 pb-6">
                     <Button
                         size="sm"
-                        color="primary"
-                        iconTrailing={ChevronRight}
-                        onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
+                        color="secondary"
+                        iconLeading={ChevronLeft}
+                        onClick={() => setStep((s) => Math.max(0, s - 1))}
+                        isDisabled={step === 0}
                     >
-                        Berikutnya
+                        Sebelumnya
                     </Button>
-                ) : (
-                    <Button size="sm" color="primary" onClick={onClose}>
-                        Selesai 🎉
-                    </Button>
-                )}
+
+                    {/* Step dots */}
+                    <div className="flex items-center gap-1.5">
+                        {Array.from({ length: totalSteps }).map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setStep(i)}
+                                className={cx(
+                                    "rounded-full transition-all duration-200 cursor-pointer",
+                                    i === step
+                                        ? "w-4 h-2 bg-brand-600"
+                                        : "w-2 h-2 bg-secondary hover:bg-tertiary"
+                                )}
+                                aria-label={`Langkah ${i + 1}`}
+                            />
+                        ))}
+                    </div>
+
+                    {step < totalSteps - 1 ? (
+                        <Button
+                            size="sm"
+                            color="primary"
+                            iconTrailing={ChevronRight}
+                            onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
+                        >
+                            Berikutnya
+                        </Button>
+                    ) : (
+                        <Button size="sm" color="primary" onClick={onClose}>
+                            Selesai 🎉
+                        </Button>
+                    )}
+                </div>
             </div>
         </Modal>
     );
