@@ -1,14 +1,13 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { Button as AriaButton } from "react-aria-components";
 import { useAuthStore } from "@/store/use-auth-store";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { Avatar } from "@/components/base/avatar/avatar";
 import { ChevronDown, Play, HomeLine, LayoutGrid02, LogOut01 } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
+import { cx } from "@/utils/cx";
 
 export function UserDropdown() {
-    const router = useRouter();
     const pathname = usePathname();
     const { user, logout } = useAuthStore();
 
@@ -25,11 +24,11 @@ export function UserDropdown() {
         : user?.email?.slice(0, 2).toUpperCase() ?? "U";
 
     // Determine dynamic menu item based on current route
-    let dynamicItem: { label: string; href: string; icon: any } | null = null;
+    let dynamicItem: { label: string; href: string; icon: React.FC<{ className?: string }> } | null = null;
     if (!isSuperAdmin) {
         if (pathname.startsWith("/playground/") || pathname.startsWith("/result/")) {
             dynamicItem = { label: "Playground", href: "/playground", icon: Play };
-        } else if (pathname.startsWith("/playground")) {
+        } else if (pathname === "/playground") {
             dynamicItem = { label: "Beranda", href: "/", icon: HomeLine };
         } else {
             dynamicItem = { label: "Playground", href: "/playground", icon: Play };
@@ -38,19 +37,28 @@ export function UserDropdown() {
 
     return (
         <Dropdown.Root>
-            <Button
-                color="secondary"
-                size="md"
-                className="rounded-full! pl-1.5! pr-3! py-1.5! h-max flex items-center gap-2"
+            {/* Trigger — must be AriaButton directly under AriaMenuTrigger */}
+            <AriaButton
+                className={({ isPressed, isFocusVisible }) =>
+                    cx(
+                        "flex items-center gap-2.5 rounded-full border border-secondary px-3 py-1.5",
+                        "bg-primary hover:bg-secondary transition-colors text-sm cursor-pointer outline-none",
+                        (isPressed || isFocusVisible) && "bg-secondary"
+                    )
+                }
             >
-                <Avatar size="xs" initials={initials} contrastBorder={false} className="size-7! text-xs font-semibold bg-brand-600 text-white" />
-                <span className="hidden sm:block max-w-[120px] truncate font-semibold text-secondary">
+                {/* Avatar circle */}
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
+                    {initials}
+                </span>
+                <span className="hidden sm:block max-w-[120px] truncate font-medium text-primary">
                     {user?.name || user?.email}
                 </span>
-                <ChevronDown className="size-4 shrink-0 text-fg-quaternary" />
-            </Button>
+                {/* Chevron */}
+                <ChevronDown className="size-3 text-tertiary transition-transform duration-200 group-data-[open]:rotate-180" />
+            </AriaButton>
 
-            <Dropdown.Popover placement="bottom end" className="w-56 mt-2">
+            <Dropdown.Popover placement="bottom end" className="w-56">
                 <div className="flex flex-col border-b border-secondary px-4 py-3">
                     <p className="text-sm font-semibold text-primary truncate">{user?.name || "User"}</p>
                     <p className="text-xs text-tertiary truncate">{user?.email}</p>
