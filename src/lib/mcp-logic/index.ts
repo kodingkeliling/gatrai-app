@@ -14,7 +14,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkelilin
 export const TOOLS_LIST = [
     {
         name: "get_language_quiz_template",
-        description: "Returns the strict guidelines and structured template for creating language quiz questions to ensure consistency with GatrAI's platform.",
+        description: "MUST BE CALLED FIRST before generating any quiz. Returns the exact format and rules for each question type (Reading, Listening, Writing, Speaking). After calling this tool, you MUST generate ALL the questions IN FULL in the chat message for the user to read and review — NOT a summary, NOT a plan, NOT a draft outline. Write out every single question completely with its description, options (if applicable), and answer visible in the chat. Only ask the user to say 'simpan' AFTER they have seen all the full questions.",
         inputSchema: {
             type: "object",
             properties: {}
@@ -79,7 +79,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "save_approved_language_quiz",
-        description: `Saves a finalized language quiz to GatrAI. CRITICAL WORKFLOW RULES:\n1) When user asks to create a quiz, DO NOT call any tools immediately. First call 'get_language_quiz_template' to understand the EXACT format requirements.\n2) Respond with a template prompt for the user to fill in (Language, Skills, Count), then generate questions IN THE CHAT for brainstorming WITHOUT calling any tools.\n3) Wait for user to say 'simpan' or 'save'. ONLY THEN call this tool.\n4) CRITICAL: Each question MUST use the structured fields (description, options, answer, type). NEVER put all question content in a single 'content' string. Reading/Listening MUST have exactly 4 options as an array. Speaking/Writing MUST have options=null.`,
+        description: `Saves a finalized language quiz to GatrAI. MANDATORY WORKFLOW — you MUST follow these steps in order, NO EXCEPTIONS:\n\nSTEP 1: When user asks to create a quiz, call 'get_language_quiz_template' first to understand the format.\n\nSTEP 2: Ask the user for: Language, Skills (Reading/Writing/Speaking/Listening), and number of questions.\n\nSTEP 3: GENERATE ALL QUESTIONS IN FULL IN THE CHAT. Do NOT summarize. Do NOT show a plan or outline. Do NOT skip to saving. Write every single question completely — with its full description text, all 4 answer choices (for Reading/Listening), and the correct answer — so the user can read, review, and request changes.\n\nSTEP 4: After showing all questions, tell the user: 'Ketik simpan jika sudah oke, atau beritahu saya jika ada yang ingin diubah.'\n\nSTEP 5: ONLY after the user explicitly says 'simpan' or 'save', call this tool to persist the quiz.\n\nSTEP 6: Each question MUST use structured fields: description (string), options (array of 4 strings for Reading/Listening, null for Writing/Speaking), answer (string), type (reading/writing/speaking/listening).`,
         inputSchema: {
             type: "object",
             properties: {

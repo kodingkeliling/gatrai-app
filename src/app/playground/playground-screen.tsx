@@ -220,9 +220,67 @@ export const PlaygroundScreen = () => {
 
     if (loadingExam || !hasHydrated) {
         return (
-            <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-primary px-4">
-                <FeaturedIcon icon={Zap} color="brand" theme="light" size="lg" className="animate-pulse" />
-                <h2 className="text-display-xs font-semibold text-primary">Loading your exam...</h2>
+            <div className="flex min-h-dvh flex-col bg-primary animate-pulse">
+                {/* Header skeleton */}
+                <header className="sticky top-0 z-30 border-b border-secondary bg-primary px-4 py-3 md:px-8">
+                    <div className="mx-auto flex w-full max-w-container items-center justify-between">
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <div className="size-7 rounded-lg bg-secondary" />
+                            <hr className="h-4 w-px bg-border-secondary md:h-6" />
+                            <div className="h-4 w-12 rounded bg-secondary" />
+                        </div>
+                        <div className="hidden items-center gap-2 md:flex">
+                            <div className="h-2 w-40 rounded-full bg-secondary" />
+                            <div className="h-3 w-8 rounded bg-secondary" />
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                            <div className="size-8 rounded-lg bg-secondary" />
+                            <div className="hidden size-8 rounded-full bg-secondary md:block" />
+                        </div>
+                    </div>
+                </header>
+
+                {/* Main area skeleton */}
+                <main className="mx-auto flex w-full max-w-container flex-1 flex-col gap-6 px-4 py-6 md:flex-row md:gap-8 md:px-8 md:py-8">
+                    {/* Left Sidebar skeleton */}
+                    <aside className="hidden h-fit w-64 shrink-0 flex-col gap-4 rounded-xl border border-secondary p-4 md:flex">
+                        <div className="h-4 w-24 rounded bg-secondary mb-2" />
+                        <div className="grid grid-cols-5 gap-2">
+                            {Array.from({ length: 10 }).map((_, idx) => (
+                                <div key={idx} className="aspect-square rounded-lg bg-secondary" />
+                            ))}
+                        </div>
+                    </aside>
+
+                    {/* Central main question content skeleton */}
+                    <section className="flex flex-1 flex-col gap-8">
+                        <div className="flex flex-col gap-6 rounded-2xl border border-secondary bg-primary p-5 shadow-xs md:p-10">
+                            <div className="flex items-center justify-between">
+                                <div className="h-5 w-20 rounded-full bg-secondary" />
+                            </div>
+
+                            <div className="flex flex-col gap-4 mt-2">
+                                <div className="h-5 w-3/4 rounded bg-secondary" />
+                                <div className="h-5 w-1/2 rounded bg-secondary" />
+                                <div className="h-5 w-2/3 rounded bg-secondary" />
+                            </div>
+
+                            {/* Options skeleton or input skeleton */}
+                            <div className="mt-6 flex flex-col gap-3">
+                                <div className="h-12 w-full rounded-xl bg-secondary" />
+                                <div className="h-12 w-full rounded-xl bg-secondary" />
+                                <div className="h-12 w-full rounded-xl bg-secondary" />
+                                <div className="h-12 w-full rounded-xl bg-secondary" />
+                            </div>
+                        </div>
+
+                        {/* Footer buttons skeleton */}
+                        <div className="flex items-center justify-between gap-4 mt-auto">
+                            <div className="h-10 w-28 rounded-lg bg-secondary" />
+                            <div className="h-10 w-28 rounded-lg bg-secondary" />
+                        </div>
+                    </section>
+                </main>
             </div>
         );
     }
