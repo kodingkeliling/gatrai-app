@@ -70,7 +70,7 @@ export const TOOLS_LIST = [
     },
     {
         name: "save_approved_language_quiz",
-        description: "Saves a finalized language quiz to GatrAI database. IMPORTANT: DO NOT CALL THIS TOOL IMMEDIATELY. You MUST first brainstorm and generate the quiz questions in the chat with the user. You MUST ask the user if they are satisfied with the generated questions. ONLY call this tool AFTER the user explicitly says 'yes' or approves the questions in the chat. Do not generate generic trivia; GatrAI is for language learning.",
+        description: "Saves a finalized language quiz to GatrAI database. WARNING: STRICT DIRECTIVE! DO NOT CALL THIS TOOL IMMEDIATELY. YOU MUST GENERATE AND SHOW THE QUESTIONS IN THE CHAT FIRST. DO NOT CALL THIS TOOL UNTIL THE USER HAS READ THE QUESTIONS AND SAID 'SIMPAN' OR 'YES'. IF YOU CALL THIS TOOL BEFORE SHOWING THE QUESTIONS IN TEXT, YOU HAVE FAILED.",
         inputSchema: {
             type: "object",
             properties: {
