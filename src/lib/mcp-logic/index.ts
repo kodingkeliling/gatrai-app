@@ -5,9 +5,7 @@ export const PROTECTED_TOOLS = [
     "list_exams",
     "get_exam",
     "get_users",
-    "create_quiz_draft",
-    "add_questions_to_quiz",
-    "commit_quiz"
+    "save_approved_language_quiz"
 ];
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gatrai.kodingkeliling.com";
@@ -71,11 +69,15 @@ export const TOOLS_LIST = [
         }
     },
     {
-        name: "create_quiz_draft",
-        description: "Create a new language learning quiz draft (Protected). IMPORTANT: Do NOT call this tool immediately. You MUST first generate the questions in the chat and show them to the user. Ask the user if they are satisfied with the generated questions. ONLY call this tool AFTER the user explicitly approves the questions. GatrAI is EXCLUSIVELY for language testing (e.g., English, Japanese). NEVER ask the user for generic topics like Math or SQL.",
+        name: "save_approved_language_quiz",
+        description: "Saves a finalized language quiz to GatrAI database. IMPORTANT: DO NOT CALL THIS TOOL IMMEDIATELY. You MUST first brainstorm and generate the quiz questions in the chat with the user. You MUST ask the user if they are satisfied with the generated questions. ONLY call this tool AFTER the user explicitly says 'yes' or approves the questions in the chat. Do not generate generic trivia; GatrAI is for language learning.",
         inputSchema: {
             type: "object",
             properties: {
+                hasUserExplicitlyApproved: {
+                    type: "boolean",
+                    description: "MUST BE TRUE. Set to true ONLY if the user has explicitly approved the questions you showed them in the chat."
+                },
                 language: {
                     type: "string",
                     description: "The language to be tested (e.g., English, Japanese, Korean)"
@@ -88,28 +90,6 @@ export const TOOLS_LIST = [
                     },
                     description: "The language skills to test"
                 },
-                provider: {
-                    type: "string",
-                    description: "AI provider used (optional)"
-                },
-                modelName: {
-                    type: "string",
-                    description: "AI model name used (optional)"
-                }
-            },
-            required: ["language", "skills"]
-        }
-    },
-    {
-        name: "add_questions_to_quiz",
-        description: "Add language testing questions to an existing quiz draft (Protected). IMPORTANT: Only call this tool to upload the questions AFTER you have already shown them to the user in the chat and received their explicit approval. The AI MUST generate language assessment questions (reading comprehension, grammar, speaking prompts, listening scenarios, etc) tailored to the requested language.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                quizId: {
-                    type: "string",
-                    description: "The unique identifier of the quiz"
-                },
                 questions: {
                     type: "array",
                     items: {
@@ -121,30 +101,15 @@ export const TOOLS_LIST = [
                             },
                             type: {
                                 type: "string",
-                                enum: ["reading", "writing", "speaking", "listening"],
-                                description: "The type of language skill this question tests"
+                                enum: ["reading", "writing", "speaking", "listening"]
                             }
                         },
                         required: ["content", "type"]
                     },
-                    description: "List of questions to add"
+                    description: "The final list of questions approved by the user"
                 }
             },
-            required: ["quizId", "questions"]
-        }
-    },
-    {
-        name: "commit_quiz",
-        description: "Finalize and save the quiz (Protected). Call this when the user confirms saving/finalizing the draft.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                quizId: {
-                    type: "string",
-                    description: "The unique identifier of the quiz to commit"
-                }
-            },
-            required: ["quizId"]
+            required: ["hasUserExplicitlyApproved", "language", "skills", "questions"]
         }
     }
 ];
@@ -293,8 +258,15 @@ export async function executeTool(
             };
         }
 
-        case "create_quiz_draft": {
-            const { language, skills, provider = "auto", modelName } = args;
+        case "save_approved_language_quiz": {
+            const { hasUserExplicitlyApproved, language, skills, questions, provider = "auto", modelName } = args;
+
+            if (hasUserExplicitlyApproved !== true) {
+                return {
+                    content: [{ type: "text", text: "Error: You must brainstorm the questions with the user in the chat first and get their approval before calling this tool." }],
+                    isError: true
+                };
+            }
 
             const exam = await prisma.exam.create({
                 data: {
@@ -303,8 +275,16 @@ export async function executeTool(
                     skills,
                     provider,
                     modelName: modelName || null,
-                    status: "ongoing" // draft
+                    status: "completed" // Finalized immediately
                 }
+            });
+
+            await prisma.question.createMany({
+                data: questions.map((q: any) => ({
+                    examId: exam.id,
+                    content: q.content,
+                    type: q.type
+                }))
             });
 
             const quizUrl = `${APP_URL}/playground/${exam.id}`;
@@ -313,83 +293,7 @@ export async function executeTool(
                 content: [
                     {
                         type: "text",
-                        text: `Quiz draft created successfully.\nQuiz ID: ${exam.id}\nStatus: ongoing (draft)\nURL: ${quizUrl}\n\nYou can now add questions using add_questions_to_quiz.`
-                    }
-                ]
-            };
-        }
-
-        case "add_questions_to_quiz": {
-            const { quizId, questions } = args;
-
-            // Check access
-            const exam = await prisma.exam.findUnique({
-                where: { id: quizId }
-            });
-
-            if (!exam) {
-                return {
-                    content: [{ type: "text", text: `Quiz with ID ${quizId} not found.` }],
-                    isError: true
-                };
-            }
-
-            if (exam.userId !== userId) {
-                throw new Error("UNAUTHORIZED");
-            }
-
-            // Create questions
-            await prisma.question.createMany({
-                data: questions.map((q: any) => ({
-                    examId: quizId,
-                    content: q.content,
-                    type: q.type
-                }))
-            });
-
-            const quizUrl = `${APP_URL}/playground/${quizId}`;
-
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: `Successfully added ${questions.length} questions to Quiz Draft.\nURL to view/try: ${quizUrl}`
-                    }
-                ]
-            };
-        }
-
-        case "commit_quiz": {
-            const { quizId } = args;
-
-            const exam = await prisma.exam.findUnique({
-                where: { id: quizId }
-            });
-
-            if (!exam) {
-                return {
-                    content: [{ type: "text", text: `Quiz with ID ${quizId} not found.` }],
-                    isError: true
-                };
-            }
-
-            if (exam.userId !== userId) {
-                throw new Error("UNAUTHORIZED");
-            }
-
-            // Set status to completed (finalized)
-            const updated = await prisma.exam.update({
-                where: { id: quizId },
-                data: { status: "completed" }
-            });
-
-            const quizUrl = `${APP_URL}/playground/${quizId}`;
-
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: `Quiz committed and saved successfully!\nStatus: ${updated.status}\nURL to try: ${quizUrl}`
+                        text: `Quiz saved successfully to GatrAI!\nURL to try: ${quizUrl}`
                     }
                 ]
             };
