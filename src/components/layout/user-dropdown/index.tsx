@@ -69,10 +69,11 @@ export function UserDropdown() {
                             {dynamicItem.label}
                         </Dropdown.Item>
                     )}
-
-                    <Dropdown.Item icon={LayoutGrid02} href="/dashboard">
-                        Dashboard
-                    </Dropdown.Item>
+                    {isSuperAdmin && (
+                        <Dropdown.Item icon={LayoutGrid02} href="/dashboard">
+                            Dashboard
+                        </Dropdown.Item>
+                    )}
 
                     <Dropdown.Separator />
 
