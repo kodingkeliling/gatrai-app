@@ -88,8 +88,16 @@ export async function GET(req: NextRequest) {
 
         const token = jwt.sign(authUser, JWT_SECRET, { expiresIn: "7d" });
 
+        // Read the state parameter to see if there's a redirect intent
+        const state = req.nextUrl.searchParams.get("state");
+
         // Set cookie and redirect
-        const res = NextResponse.redirect(new URL("/dashboard", req.url));
+        let redirectPath = user.role === "SUPER_ADMIN" ? "/dashboard" : "/playground";
+        if (state && state.startsWith("/")) {
+            redirectPath = state;
+        }
+
+        const res = NextResponse.redirect(new URL(redirectPath, req.url));
         res.cookies.set("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
