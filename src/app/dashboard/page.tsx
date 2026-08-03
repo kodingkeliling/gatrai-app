@@ -31,7 +31,7 @@ const EXAM_COLUMNS = [
         label: "Status",
         render: (row: ExamAttempt) => (
             <Badge
-                color={row.status === "completed" ? "success" : "brand"}
+                color={row.status === "completed" ? "success" : "warning"}
                 type="pill-color"
                 size="sm"
             >
