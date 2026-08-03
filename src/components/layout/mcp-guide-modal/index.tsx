@@ -57,6 +57,7 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
     const { toastSuccess } = useToast();
     const [activeTool, setActiveTool] = useState<Key>("chatgpt");
     const [step, setStep] = useState(0);
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     const guide = GUIDES[activeTool as AITool];
     const totalSteps = guide.steps.length;
@@ -66,6 +67,7 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
         if (!key) return;
         setActiveTool(key);
         setStep(0);
+        setIsImageLoaded(false);
     };
 
     const handleCopy = () => {
@@ -129,7 +131,11 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                             src={currentStep.image}
                             alt={`Langkah ${step + 1}`}
                             fill
-                            className="object-contain animate-in fade-in duration-300"
+                            onLoad={() => setIsImageLoaded(true)}
+                            className={cx(
+                                "object-contain transition-opacity duration-300",
+                                isImageLoaded ? "opacity-100" : "opacity-0"
+                            )}
                         />
                     </div>
                 </div>
@@ -148,7 +154,10 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                         size="sm"
                         color="secondary"
                         iconLeading={ChevronLeft}
-                        onClick={() => setStep((s) => Math.max(0, s - 1))}
+                        onClick={() => {
+                            setIsImageLoaded(false);
+                            setStep((s) => Math.max(0, s - 1));
+                        }}
                         isDisabled={step === 0}
                     >
                         Sebelumnya
@@ -158,7 +167,10 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                         size="md"
                         page={step + 1}
                         total={totalSteps}
-                        onPageChange={(page) => setStep(page - 1)}
+                        onPageChange={(page) => {
+                            setIsImageLoaded(false);
+                            setStep(page - 1);
+                        }}
                     />
 
                     {step < totalSteps - 1 ? (
@@ -166,7 +178,10 @@ export const MCPGuideModal = ({ isOpen, onClose }: MCPGuideModalProps) => {
                             size="sm"
                             color="primary"
                             iconTrailing={ChevronRight}
-                            onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
+                            onClick={() => {
+                                setIsImageLoaded(false);
+                                setStep((s) => Math.min(totalSteps - 1, s + 1));
+                            }}
                         >
                             Berikutnya
                         </Button>
