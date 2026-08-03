@@ -44,11 +44,13 @@ export const PlaygroundHome = () => {
 
             <main className="flex flex-1 flex-col">
                 {/* Two-column layout */}
-                <div className="mx-auto flex w-full max-w-container flex-1 flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8 md:px-8 md:py-8 lg:gap-12">
+                <div className="mx-auto flex w-full max-w-container flex-1 flex-col gap-6 px-4 py-6 md:flex-row md:gap-8 md:px-8 md:py-8 lg:gap-12 items-start md:items-stretch">
                     {/* RIGHT — form generator (order-first on mobile) */}
-                    <aside className="order-first md:order-last w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col gap-4 md:sticky md:top-6">
+                    <aside className="order-first md:order-last w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col gap-4">
                         <TokenStatusCard />
-                        <ConfigForm isPlayground />
+                        <div className="md:sticky md:top-24">
+                            <ConfigForm isPlayground />
+                        </div>
                     </aside>
 
                     {/* LEFT — exam list */}
